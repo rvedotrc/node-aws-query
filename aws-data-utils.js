@@ -1,4 +1,5 @@
 var Q = require('q');
+var fs = require('fs');
 
 var AtomicFile = require('./atomic-file');
 
@@ -45,6 +46,20 @@ exports.joinResponses = function (key) {
 
         return answer;
     };
+};
+
+exports.deleteAsset = function (filename) {
+    return Q.nfapply(fs.unlink, [filename])
+        .then(function () {
+            console.log("Deleted", filename);
+        }, function (e) {
+            if (e.code === 'ENOENT') {
+                console.log("Deleted", filename);
+                return true;
+            } else {
+                throw e;
+            }
+        });
 };
 
 exports.saveContentTo = function (filename) {
