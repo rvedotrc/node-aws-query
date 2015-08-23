@@ -45,6 +45,17 @@ var tidyResponseMetadata = function (data) {
     return data;
 };
 
+var joinResponses = function (key) {
+    return function (responses) {
+        if (responses.length === 0) return null;
+        var answer = responses[0];
+        for (var i=1; i<responses.length; ++i) {
+            answer[key] = answer[key].concat(responses[i][key]);
+        }
+        return answer;
+    };
+};
+
 var saveJsonTo = function (filename) {
     return function (data) {
         console.log("going to save data");
@@ -60,9 +71,6 @@ var collectAll = function () {
 
     var lak = Q.all([ iam, lu ])
         .spread(function (iamClient, listOfUsers) {
-            console.log(listOfUsers);
-            console.log(listOfUsers.Users);
-            console.log(listOfUsers.Users.length);
             var all = [];
             for (var i=0; i<listOfUsers.Users.length; ++i) {
                 (function (userName) {
@@ -72,11 +80,13 @@ var collectAll = function () {
                             return collectFromAws(iamClient, "IAM", "listAccessKeys", [ { UserName: userName } ])
                         })
                         .then(tidyResponseMetadata)
-                        .then(saveJsonTo("var/iam/list-access-keys."+userName+".json"))
                     );
                 })(listOfUsers.Users[i].UserName);
             }
-            return Q.all(all);
+            return Q.all(all)
+                .then(joinResponses("AccessKeyMetadata"))
+                .then(saveJsonTo("var/iam/list-access-keys.json"))
+                ;
         });
 
     return Q.all([
