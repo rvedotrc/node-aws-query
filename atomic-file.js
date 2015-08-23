@@ -23,7 +23,7 @@ var writeString = function (body, filename) {
                         });
                     } else {
                         console.log("saved to", filename);
-                        d.resolve(filename);
+                        d.resolve(body);
                     }
                 });
             }
@@ -34,7 +34,7 @@ var writeString = function (body, filename) {
 };
 
 var writeJson = function (data, filename) {
-    return writeString(CanonicalJson(data, null, 2)+"\n", filename);
+    return writeString(CanonicalJson(data, null, 2)+"\n", filename).thenResolve(data);
 };
 
 module.exports = {

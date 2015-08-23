@@ -55,8 +55,8 @@ var saveJsonTo = function (filename) {
 var collectAll = function () {
     var iam = promiseIAM();
 
-    var laa = iam.then(listAccountAliases).then(tidyResponseMetadata);
-    var lu = iam.then(listUsers).then(tidyResponseMetadata);
+    var laa = iam.then(listAccountAliases).then(tidyResponseMetadata).then(saveJsonTo("var/iam/list-account-aliases.json"));
+    var lu = iam.then(listUsers).then(tidyResponseMetadata).then(saveJsonTo("var/iam/list-users.json"));
 
     var lak = Q.all([ iam, lu ])
         .spread(function (iamClient, listOfUsers) {
@@ -80,8 +80,8 @@ var collectAll = function () {
         });
 
     return Q.all([
-        laa.then(saveJsonTo("var/iam/list-account-aliases.json")),
-        lu.then(saveJsonTo("var/iam/list-users.json")),
+        laa,
+        lu,
         lak
     ]);
 };
