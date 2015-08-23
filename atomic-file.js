@@ -6,33 +6,35 @@ var path = require('path');
 var TreeMaker = require('./tree-maker');
 
 var writeString = function (body, filename) {
-    var tmpFilename = filename + ".tmp";
-    var d = Q.defer();
+    return TreeMaker.mkpath(path.dirname(filename)).then(function () {
+        var tmpFilename = filename + ".tmp";
+        var d = Q.defer();
 
-    process.nextTick(function () {
-        fs.writeFile(tmpFilename, body, {'flag': 'w'}, function(err) {
-            if (err) {
-                fs.unlink(tmpFilename, function(unlinkErr) {
-                    // ignore unlinkErr
-                    d.reject(err);
-                });
-            } else {
-                fs.rename(tmpFilename, filename, function(err) {
-                    if (err) {
-                        fs.unlink(tmpFilename, function(unlinkErr) {
-                            // ignore unlinkErr
-                            d.reject(err);
-                        });
-                    } else {
-                        console.log("Wrote", body.length, "bytes to", filename);
-                        d.resolve(body);
-                    }
-                });
-            }
+        process.nextTick(function () {
+            fs.writeFile(tmpFilename, body, {'flag': 'w'}, function(err) {
+                if (err) {
+                    fs.unlink(tmpFilename, function(unlinkErr) {
+                        // ignore unlinkErr
+                        d.reject(err);
+                    });
+                } else {
+                    fs.rename(tmpFilename, filename, function(err) {
+                        if (err) {
+                            fs.unlink(tmpFilename, function(unlinkErr) {
+                                // ignore unlinkErr
+                                d.reject(err);
+                            });
+                        } else {
+                            console.log("Wrote", body.length, "bytes to", filename);
+                            d.resolve(body);
+                        }
+                    });
+                }
+            });
         });
-    });
 
-    return TreeMaker.mkpath(path.dirname(filename)).then(d.promise);
+        return d.promise;
+    });
 };
 
 var writeJson = function (data, filename) {
