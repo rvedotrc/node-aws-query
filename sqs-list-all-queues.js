@@ -5,10 +5,8 @@ var AwsDataUtils = require('./aws-data-utils');
 var PrefixTruncationExpander = require('./prefix-truncation-expander');
 
 var alphabet = '0123456789' +
-    '-' +
-    'ABCDEFGHIJKLMNOPQRSTUVWXYZ' +
-    '_' +
-    'abcdefghijklmnopqrstuvwxyz';
+    '-ABCDEFGHIJKLMNOPQRSTUVWXYZ' +
+    '_abcdefghijklmnopqrstuvwxyz';
 
 var maxResults = 1000;
 
@@ -25,7 +23,7 @@ var listAllQueues = function(sqs, prefix) {
             return path.basename(s);
         },
         alphabet,
-        1000
+        maxResults
     );
 
     return expander.expand(prefix)
