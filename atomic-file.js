@@ -7,7 +7,6 @@ var writeString = function (body, filename) {
     var d = Q.defer();
 
     process.nextTick(function () {
-        console.log("saving to", tmpFilename);
         fs.writeFile(tmpFilename, body, {'flag': 'w'}, function(err) {
             if (err) {
                 fs.unlink(tmpFilename, function(unlinkErr) {
@@ -22,7 +21,7 @@ var writeString = function (body, filename) {
                             d.reject(err);
                         });
                     } else {
-                        console.log("saved to", filename);
+                        console.log("Wrote", body.length, "bytes to", filename);
                         d.resolve(body);
                     }
                 });

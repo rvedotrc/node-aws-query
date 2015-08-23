@@ -16,7 +16,6 @@ var collectFromAws = function (client, clientName, method, args) {
         console.log(clientName, method, args);
         var cb = function (err, data) {
             if (err === null) {
-                console.log(clientName, method, args, "succeeded with", data);
                 d.resolve(data);
             } else {
                 console.log(clientName, method, args, "failed with", err);
@@ -64,7 +63,6 @@ var parseCsv = function (csvString) {
         var rows = [];
         csv.fromString(csvString, {headers: true})
             .on("data", function (data) {
-                console.log("csv data =", data);
                 rows.push(data);
             })
             .on("end", function () {
@@ -141,14 +139,12 @@ var joinResponses = function (key) {
 
 var saveContentTo = function (filename) {
     return function (data) {
-        console.log("going to save content");
         return AtomicFile.writeString(data, filename);
     };
 };
 
 var saveJsonTo = function (filename) {
     return function (data) {
-        console.log("going to save data");
         return AtomicFile.writeJson(data, filename);
     };
 };
