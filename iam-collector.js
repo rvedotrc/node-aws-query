@@ -1,5 +1,6 @@
 var AWS = require('aws-sdk');
 var Q = require('q');
+var csv = require("fast-csv");
 
 Q.longStackSupport = true;
 
@@ -55,6 +56,22 @@ var getCredentialReportCsv = function (iam) {
             if (csv !== "" && csv[csv.length-1] !== "\n") csv = csv + "\n";
             return csv;
         });
+};
+
+var parseCsv = function (csvString) {
+    var d = Q.defer();
+    process.nextTick(function () {
+        var rows = [];
+        csv.fromString(csvString, {headers: true})
+            .on("data", function (data) {
+                console.log("csv data =", data);
+                rows.push(data);
+            })
+            .on("end", function () {
+                d.resolve({ CredentialReport: rows });
+            });
+    });
+    return d.promise;
 };
 
 var listRoles = function (iam) {
@@ -140,13 +157,15 @@ var collectAll = function () {
     var iam = promiseIAM();
 
     var gcr = iam.then(getCredentialReportCsv).then(saveContentTo("var/iam/credential-report.raw"));
+    var jcr = gcr.then(parseCsv).then(saveJsonTo("var/iam/credential-report.json"));
+
     var laa = iam.then(listAccountAliases).then(tidyResponseMetadata).then(saveJsonTo("var/iam/list-account-aliases.json"));
     var lu = iam.then(listUsers).then(tidyResponseMetadata).then(saveJsonTo("var/iam/list-users.json"));
     var lr = iam.then(listRoles).then(tidyResponseMetadata).then(saveJsonTo("var/iam/list-roles.json"));
     var lak = Q.all([ iam, lu ]).spread(listAccessKeys).then(saveJsonTo("var/iam/list-access-keys.json"));
 
     return Q.all([
-        gcr,
+        gcr, jcr,
         laa,
         lu,
         lr,
