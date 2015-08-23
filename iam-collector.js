@@ -27,6 +27,36 @@ var collectFromAws = function (client, clientName, method, args) {
     return d.promise;
 };
 
+var generateCredentialReport = function (iam) {
+    return collectFromAws(iam, "IAM", "generateCredentialReport", []);
+};
+
+var getCredentialReport = function (iam) {
+    return collectFromAws(iam, "IAM", "getCredentialReport", [])
+        .fail(function (v) {
+            if (v.statusCode === 410) {
+                // generate (not present, or expired)
+                return Q(iam).then(generateCredentialReport).delay(2000).thenResolve(iam).then(getCredentialReport);
+            } else if (v.statusCode === 404) {
+                // not ready (generation in progress)
+                return Q(iam).delay(2000).then(getCredentialReport);
+            } else {
+                // other error
+                return Q.reject(v);
+            }
+        });
+};
+
+var getCredentialReportCsv = function (iam) {
+    return getCredentialReport(iam)
+        .then(function (v) {
+            if (v.ReportFormat !== 'text/csv') throw new Error('getCredentialReport did not return text/csv');
+            var csv = new Buffer(v.Content, 'base64').toString();
+            if (csv !== "" && csv[csv.length-1] !== "\n") csv = csv + "\n";
+            return csv;
+        });
+};
+
 var listRoles = function (iam) {
     return collectFromAws(iam, "IAM", "listRoles", [])
         .then(function (v) {
@@ -92,6 +122,13 @@ var joinResponses = function (key) {
     };
 };
 
+var saveContentTo = function (filename) {
+    return function (data) {
+        console.log("going to save content");
+        return AtomicFile.writeString(data, filename);
+    };
+};
+
 var saveJsonTo = function (filename) {
     return function (data) {
         console.log("going to save data");
@@ -102,12 +139,14 @@ var saveJsonTo = function (filename) {
 var collectAll = function () {
     var iam = promiseIAM();
 
+    var gcr = iam.then(getCredentialReportCsv).then(saveContentTo("var/iam/credential-report.raw"));
     var laa = iam.then(listAccountAliases).then(tidyResponseMetadata).then(saveJsonTo("var/iam/list-account-aliases.json"));
     var lu = iam.then(listUsers).then(tidyResponseMetadata).then(saveJsonTo("var/iam/list-users.json"));
     var lr = iam.then(listRoles).then(tidyResponseMetadata).then(saveJsonTo("var/iam/list-roles.json"));
     var lak = Q.all([ iam, lu ]).spread(listAccessKeys).then(saveJsonTo("var/iam/list-access-keys.json"));
 
     return Q.all([
+        gcr,
         laa,
         lu,
         lr,
