@@ -1,6 +1,9 @@
 var CanonicalJson = require('canonical-json');
 var Q = require('q');
 var fs = require('fs');
+var path = require('path');
+
+var TreeMaker = require('./tree-maker');
 
 var writeString = function (body, filename) {
     var tmpFilename = filename + ".tmp";
@@ -29,7 +32,7 @@ var writeString = function (body, filename) {
         });
     });
 
-    return d.promise;
+    return TreeMaker.mkpath(path.dirname(filename)).then(d.promise);
 };
 
 var writeJson = function (data, filename) {
