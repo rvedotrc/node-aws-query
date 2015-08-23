@@ -71,16 +71,23 @@ var tidyResponseMetadata = function (data) {
             delete data.ResponseMetadata;
         }
     }
+    if (data.IsTruncated === false) {
+        delete data.IsTruncated;
+    }
     return data;
 };
 
 var joinResponses = function (key) {
     return function (responses) {
-        if (responses.length === 0) return null;
-        var answer = responses[0];
-        for (var i=1; i<responses.length; ++i) {
+        var answer = {};
+        answer[key] = [];
+
+        // TODO warn if any response contains any key other than 'key'
+
+        for (var i=0; i<responses.length; ++i) {
             answer[key] = answer[key].concat(responses[i][key]);
         }
+
         return answer;
     };
 };
