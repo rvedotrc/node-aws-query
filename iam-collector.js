@@ -35,6 +35,24 @@ var listAccountAliases = function (iam) {
     return collectFromAws(iam, "IAM", "listAccountAliases", []);
 };
 
+var listAccessKeys = function (iam, listOfUsers) {
+    var all = [];
+
+    for (var i=0; i<listOfUsers.Users.length; ++i) {
+        (function (userName) {
+            all.push(
+                Q(true)
+                .then(function () {
+                    return collectFromAws(iam, "IAM", "listAccessKeys", [ { UserName: userName } ])
+                })
+                .then(tidyResponseMetadata)
+            );
+        })(listOfUsers.Users[i].UserName);
+    }
+
+    return Q.all(all).then(joinResponses("AccessKeyMetadata"));
+};
+
 var tidyResponseMetadata = function (data) {
     if (data.ResponseMetadata) {
         delete data.ResponseMetadata.RequestId;
@@ -68,26 +86,7 @@ var collectAll = function () {
 
     var laa = iam.then(listAccountAliases).then(tidyResponseMetadata).then(saveJsonTo("var/iam/list-account-aliases.json"));
     var lu = iam.then(listUsers).then(tidyResponseMetadata).then(saveJsonTo("var/iam/list-users.json"));
-
-    var lak = Q.all([ iam, lu ])
-        .spread(function (iamClient, listOfUsers) {
-            var all = [];
-            for (var i=0; i<listOfUsers.Users.length; ++i) {
-                (function (userName) {
-                    all.push(
-                        Q(true)
-                        .then(function () {
-                            return collectFromAws(iamClient, "IAM", "listAccessKeys", [ { UserName: userName } ])
-                        })
-                        .then(tidyResponseMetadata)
-                    );
-                })(listOfUsers.Users[i].UserName);
-            }
-            return Q.all(all)
-                .then(joinResponses("AccessKeyMetadata"))
-                .then(saveJsonTo("var/iam/list-access-keys.json"))
-                ;
-        });
+    var lak = Q.all([ iam, lu ]).spread(listAccessKeys).then(saveJsonTo("var/iam/list-access-keys.json"));
 
     return Q.all([
         laa,
@@ -99,4 +98,3 @@ var collectAll = function () {
 module.exports = {
     collectAll: collectAll
 };
-
