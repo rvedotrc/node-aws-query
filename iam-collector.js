@@ -27,6 +27,17 @@ var collectFromAws = function (client, clientName, method, args) {
     return d.promise;
 };
 
+var listRoles = function (iam) {
+    return collectFromAws(iam, "IAM", "listRoles", [])
+        .then(function (v) {
+            var roles = v.Roles;
+            for (var i=0; i<roles.length; ++i) {
+                roles[i].AssumeRolePolicyDocument = JSON.parse(decodeURIComponent(roles[i].AssumeRolePolicyDocument));
+            }
+            return v;
+        });
+};
+
 var listUsers = function (iam) {
     return collectFromAws(iam, "IAM", "listUsers", []);
 };
@@ -86,11 +97,13 @@ var collectAll = function () {
 
     var laa = iam.then(listAccountAliases).then(tidyResponseMetadata).then(saveJsonTo("var/iam/list-account-aliases.json"));
     var lu = iam.then(listUsers).then(tidyResponseMetadata).then(saveJsonTo("var/iam/list-users.json"));
+    var lr = iam.then(listRoles).then(tidyResponseMetadata).then(saveJsonTo("var/iam/list-roles.json"));
     var lak = Q.all([ iam, lu ]).spread(listAccessKeys).then(saveJsonTo("var/iam/list-access-keys.json"));
 
     return Q.all([
         laa,
         lu,
+        lr,
         lak
     ]);
 };
