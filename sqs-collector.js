@@ -21,11 +21,59 @@ var queueUrlsToNames = function(r) {
     return s;
 };
 
+var getAllQueueAttributes = function(sqs, r) {
+    var promises = [];
+    for (var i=0; i < r.QueueUrls.length; ++i) {
+        promises.push(
+            Q([ sqs, r.QueueUrls[i] ]).spread(getQueueAttributes)
+        );
+    }
+    return Q.all(promises);
+};
+
+var attributesToCollect = [
+    "Policy",
+    "VisibilityTimeout",
+    "MaximumMessageSize",
+    "MessageRetentionPeriod",
+    "CreatedTimestamp",
+    "LastModifiedTimestamp",
+    "QueueArn",
+    "DelaySeconds",
+    "ReceiveMessageWaitTimeSeconds",
+    "RedrivePolicy"
+];
+
+var getQueueAttributes = function(sqs, url) {
+    return AwsDataUtils.collectFromAws(sqs, "SQS", "getQueueAttributes", [ {QueueUrl: url, AttributeNames: attributesToCollect} ])
+        .then(function (r) {
+            var queueName = path.basename(url);
+            var saveAttrs = Q(r.Attributes).then(AwsDataUtils.saveJsonTo("var/sqs/queues/"+queueName+"/attributes.json"));
+
+            var savePolicy;
+            if (r.Attributes.Policy) {
+                var policy = JSON.parse(r.Attributes.Policy);
+                savePolicy = Q(policy).then(AwsDataUtils.saveJsonTo("var/sqs/queues/"+queueName+"/policy.json"));
+            } else {
+                savePolicy = AwsDataUtils.deleteAsset("var/sqs/queues/"+queueName+"/policy.json");
+            }
+
+            return Q.all([ saveAttrs, savePolicy ]);
+        });
+};
+
 var collectAll = function () {
     var sqs = promiseSQS();
 
-    return sqs.then(listAllQueues).then(AwsDataUtils.saveJsonTo("var/sqs/list-all-queues.json"))
-        .then(queueUrlsToNames).then(AwsDataUtils.saveContentTo("var/sqs/list-all-queues.txt"));
+    var queueUrls = sqs.then(listAllQueues).then(AwsDataUtils.saveJsonTo("var/sqs/list-all-queues.json"));
+    var queueNames = queueUrls.then(queueUrlsToNames).then(AwsDataUtils.saveContentTo("var/sqs/list-all-queues.txt"));
+    var queueAttrs = Q.all([ sqs, queueUrls ]).spread(getAllQueueAttributes);
+
+    return Q.all([
+        queueUrls,
+        queueNames,
+        queueAttrs
+    ]);
 };
 
 module.exports = {
