@@ -7,6 +7,16 @@ var promiseClient = function () {
     return Q(new AWS.S3({ region: 'eu-west-1' }));
 };
 
+var getClientForBucket = function (client, bucketName) {
+    return AwsDataUtils.collectFromAws(client, "S3", "getBucketLocation", [{Bucket: bucketName}])
+        .then(function (r) {
+            var loc = r.LocationConstraint;
+            console.log("location for", bucketName, "is", loc);
+            if (loc === 'EU') loc = 'eu-west-1';
+            return Q(new AWS.S3({ region: loc }));
+        });
+};
+
 var listBuckets = function (client) {
     // Data oddity: this data has {Owner: {DisplayName: x, ID: x}}
     return AwsDataUtils.collectFromAws(client, "S3", "listBuckets", [])
@@ -21,13 +31,72 @@ var listBuckets = function (client) {
         });
 };
 
+var collectBucketDetails = function (client, r) {
+    var promises = [];
+    for (var i=0; i < r.Buckets.length; ++i) {
+        promises.push(
+            Q([ client, r.Buckets[i].Name ]).spread(getBucketDetails)
+        );
+    }
+    return Q.all(promises);
+};
+
+var getBucketData = function (client, bucketName, method, processor, filename) {
+    var asset = "var/s3/buckets/"+bucketName+"/"+filename;
+    var p = AwsDataUtils.collectFromAws(client, "S3", method, [{Bucket: bucketName}])
+        .then(AwsDataUtils.tidyResponseMetadata);
+    if (method) p = p.then(method);
+    return p.then(AwsDataUtils.saveJsonTo(asset))
+        .fail(function (e) {
+            if (e.statusCode === 404) {
+                return AwsDataUtils.deleteAsset(asset);
+            } else {
+                throw e;
+            }
+        });
+};
+
+var fetchBucketAcl = function (client, bucketName) {
+    return getBucketData(client, bucketName, "getBucketAcl", null, "acl.json");
+};
+
+var fetchBucketLifecycle = function (client, bucketName) {
+    return getBucketData(client, bucketName, "getBucketLifecycle", null, "lifecycle.json");
+};
+
+var fetchBucketLogging = function (client, bucketName) {
+    return getBucketData(client, bucketName, "getBucketLogging", null, "logging.json");
+};
+
+var fetchBucketPolicy = function (client, bucketName) {
+    return getBucketData(client, bucketName, "getBucketPolicy", null, "policy.json");
+};
+
+var fetchBucketTagging = function (client, bucketName) {
+    return getBucketData(client, bucketName, "getBucketTagging", null, "tags.json");
+};
+
+var getBucketDetails = function (client, bucketName) {
+    var clientForBucket = getClientForBucket(client, bucketName);
+    var args = Q([ clientForBucket, bucketName ]);
+    return Q.all([
+        args.spread(fetchBucketAcl),
+        args.spread(fetchBucketLifecycle),
+        args.spread(fetchBucketLogging),
+        args.spread(fetchBucketPolicy),
+        args.spread(fetchBucketTagging)
+    ]);
+};
+
 var collectAll = function () {
     var client = promiseClient();
 
     var buckets = client.then(listBuckets).then(AwsDataUtils.saveJsonTo("var/s3/list-buckets.json"));
+    var bucketDetails = Q.all([ client, buckets ]).spread(collectBucketDetails);
 
     return Q.all([
-        buckets
+        buckets,
+        bucketDetails
     ]);
 };
 
