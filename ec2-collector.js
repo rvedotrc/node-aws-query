@@ -8,7 +8,7 @@ var promiseEC2 = function () {
 };
 
 var describeInstances = function (ec2) {
-    return AwsDataUtils.collectFromAws(ec2, "ec2", "describeInstances", [])
+    return AwsDataUtils.collectFromAws(ec2, "EC2", "describeInstances", [])
         .then(function (r) {
             r.Reservations.sort(function (a, b) {
                 if (a.ReservationId < b.ReservationId) return -1;
