@@ -9,7 +9,6 @@ var Q = require('q');
 Q.longStackSupport = true;
 
 // TODO for parity with ruby code:
-// - S3 acl/lifecycle/logging/policy/tags of each bucket
 // - delete stale assets (e.g. things that are gone)
 
 Q.all([
