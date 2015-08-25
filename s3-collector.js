@@ -7,14 +7,17 @@ var promiseClient = function () {
     return Q(new AWS.S3({ region: 'eu-west-1' }));
 };
 
-var getClientForBucket = function (client, bucketName) {
+var getLocationForBucket = function (client, bucketName) {
     return AwsDataUtils.collectFromAws(client, "S3", "getBucketLocation", [{Bucket: bucketName}])
         .then(function (r) {
-            var loc = r.LocationConstraint;
-            console.log("location for", bucketName, "is", loc);
-            if (loc === 'EU') loc = 'eu-west-1';
-            return Q(new AWS.S3({ region: loc }));
+            console.log("location for", bucketName, "is", r.LocationConstraint);
+            return r.LocationConstraint;
         });
+};
+
+var getClientForLocation = function (loc) {
+    if (loc === 'EU') loc = 'eu-west-1';
+    return Q(new AWS.S3({ region: loc }));
 };
 
 var listBuckets = function (client) {
@@ -41,8 +44,14 @@ var collectBucketDetails = function (client, r) {
     return Q.all(promises);
 };
 
-var getBucketData = function (client, bucketName, method, processor, filename) {
-    var asset = "var/service/s3/buckets/"+bucketName+"/"+filename;
+var getBucketData = function (client, loc, bucketName, method, processor, filename) {
+    if (loc === null) {
+        loc = "standard";
+    } else if (loc === "EU") {
+        loc = "eu-west-1";
+    }
+
+    var asset = "var/service/s3/location/"+loc+"/bucket/"+bucketName+"/"+filename;
 
     var p = AwsDataUtils.collectFromAws(client, "S3", method, [{Bucket: bucketName}])
         .then(AwsDataUtils.tidyResponseMetadata);
@@ -61,7 +70,7 @@ var getBucketData = function (client, bucketName, method, processor, filename) {
         });
 };
 
-var fetchBucketAcl = function (client, bucketName) {
+var fetchBucketAcl = function (client, loc, bucketName) {
     var processor = function (r) {
         r.Grants.sort(function (a, b) {
             if (a.Grantee.ID < b.Grantee.ID) return -1;
@@ -72,10 +81,10 @@ var fetchBucketAcl = function (client, bucketName) {
         });
         return r;
     };
-    return getBucketData(client, bucketName, "getBucketAcl", processor, "acl.json");
+    return getBucketData(client, loc, bucketName, "getBucketAcl", processor, "acl.json");
 };
 
-var fetchBucketLifecycle = function (client, bucketName) {
+var fetchBucketLifecycle = function (client, loc, bucketName) {
     var processor = function (r) {
         r.Rules.sort(function (a, b) {
             if (a.ID < b.ID) return -1;
@@ -86,20 +95,20 @@ var fetchBucketLifecycle = function (client, bucketName) {
         });
         return r;
     };
-    return getBucketData(client, bucketName, "getBucketLifecycle", processor, "lifecycle.json");
+    return getBucketData(client, loc, bucketName, "getBucketLifecycle", processor, "lifecycle.json");
 };
 
-var fetchBucketLogging = function (client, bucketName) {
-    return getBucketData(client, bucketName, "getBucketLogging", null, "logging.json");
+var fetchBucketLogging = function (client, loc, bucketName) {
+    return getBucketData(client, loc, bucketName, "getBucketLogging", null, "logging.json");
 };
 
-var fetchBucketPolicy = function (client, bucketName) {
+var fetchBucketPolicy = function (client, loc, bucketName) {
     // Policy decoding: not compatible with the old ruby code.  Here, we
     // decode inline.  The ruby version created a separate asset.
-    return getBucketData(client, bucketName, "getBucketPolicy", AwsDataUtils.decodeJsonInline("Policy"), "policy.json");
+    return getBucketData(client, loc, bucketName, "getBucketPolicy", AwsDataUtils.decodeJsonInline("Policy"), "policy.json");
 };
 
-var fetchBucketTagging = function (client, bucketName) {
+var fetchBucketTagging = function (client, loc, bucketName) {
     var processor = function (r) {
         r.TagSet.sort(function (a, b) {
             if (a.Key.toLowerCase() < b.Key.toLowerCase()) return -1;
@@ -108,12 +117,13 @@ var fetchBucketTagging = function (client, bucketName) {
         });
         return r;
     };
-    return getBucketData(client, bucketName, "getBucketTagging", processor, "tags.json");
+    return getBucketData(client, loc, bucketName, "getBucketTagging", processor, "tags.json");
 };
 
 var getBucketDetails = function (client, bucketName) {
-    var clientForBucket = getClientForBucket(client, bucketName);
-    var args = Q([ clientForBucket, bucketName ]);
+    var locationForBucket = getLocationForBucket(client, bucketName);
+    var clientForBucket = locationForBucket.then(getClientForLocation);
+    var args = Q([ clientForBucket, locationForBucket, bucketName ]);
     return Q.all([
         args.spread(fetchBucketAcl),
         args.spread(fetchBucketLifecycle),
