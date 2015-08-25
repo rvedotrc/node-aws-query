@@ -43,9 +43,14 @@ var collectBucketDetails = function (client, r) {
 
 var getBucketData = function (client, bucketName, method, processor, filename) {
     var asset = "var/s3/buckets/"+bucketName+"/"+filename;
+
     var p = AwsDataUtils.collectFromAws(client, "S3", method, [{Bucket: bucketName}])
         .then(AwsDataUtils.tidyResponseMetadata);
-    if (method) p = p.then(method);
+
+    if (processor) {
+        p = p.then(processor);
+    }
+
     return p.then(AwsDataUtils.saveJsonTo(asset))
         .fail(function (e) {
             if (e.statusCode === 404) {
@@ -89,8 +94,15 @@ var fetchBucketLogging = function (client, bucketName) {
 };
 
 var fetchBucketPolicy = function (client, bucketName) {
-    // TODO write or delete policy.decoded.json
-    return getBucketData(client, bucketName, "getBucketPolicy", null, "policy.json");
+    // Policy decoding: not compatible with the old ruby code.  Here, we
+    // decode inline.  The ruby version created a separate asset.
+    var processor = function (r) {
+        if (r.Policy !== null) {
+            r.Policy = JSON.parse(r.Policy);
+        }
+        return r;
+    };
+    return getBucketData(client, bucketName, "getBucketPolicy", processor, "policy.json");
 };
 
 var fetchBucketTagging = function (client, bucketName) {
