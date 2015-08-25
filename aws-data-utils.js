@@ -33,6 +33,15 @@ exports.tidyResponseMetadata = function (data) {
     return data;
 };
 
+exports.decodeJsonInline = function (key) {
+    return function (data) {
+        if (data[key] !== null && data[key] !== undefined) {
+            data[key] = JSON.parse(data[key]);
+        }
+        return data;
+    };
+};
+
 exports.joinResponses = function (key) {
     return function (responses) {
         var answer = {};

@@ -48,17 +48,12 @@ var getQueueAttributes = function(sqs, url) {
     return AwsDataUtils.collectFromAws(sqs, "SQS", "getQueueAttributes", [ {QueueUrl: url, AttributeNames: attributesToCollect} ])
         .then(function (r) {
             var queueName = path.basename(url);
-            var saveAttrs = Q(r.Attributes).then(AwsDataUtils.saveJsonTo("var/sqs/queues/"+queueName+"/attributes.json"));
-
-            var savePolicy;
-            if (r.Attributes.Policy) {
-                var policy = JSON.parse(r.Attributes.Policy);
-                savePolicy = Q(policy).then(AwsDataUtils.saveJsonTo("var/sqs/queues/"+queueName+"/policy.json"));
-            } else {
-                savePolicy = AwsDataUtils.deleteAsset("var/sqs/queues/"+queueName+"/policy.json");
-            }
-
-            return Q.all([ saveAttrs, savePolicy ]);
+            // Change from ruby code: decode policies inline, no separate asset
+            var saveAttrs = Q(r.Attributes)
+                .then(AwsDataUtils.decodeJsonInline("Policy"))
+                .then(AwsDataUtils.decodeJsonInline("RedrivePolicy"))
+                .then(AwsDataUtils.saveJsonTo("var/sqs/queues/"+queueName+"/attributes.json"));
+            return saveAttrs;
         });
 };
 

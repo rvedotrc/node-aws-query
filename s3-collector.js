@@ -96,13 +96,7 @@ var fetchBucketLogging = function (client, bucketName) {
 var fetchBucketPolicy = function (client, bucketName) {
     // Policy decoding: not compatible with the old ruby code.  Here, we
     // decode inline.  The ruby version created a separate asset.
-    var processor = function (r) {
-        if (r.Policy !== null) {
-            r.Policy = JSON.parse(r.Policy);
-        }
-        return r;
-    };
-    return getBucketData(client, bucketName, "getBucketPolicy", processor, "policy.json");
+    return getBucketData(client, bucketName, "getBucketPolicy", AwsDataUtils.decodeJsonInline("Policy"), "policy.json");
 };
 
 var fetchBucketTagging = function (client, bucketName) {
