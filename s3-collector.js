@@ -57,11 +57,31 @@ var getBucketData = function (client, bucketName, method, processor, filename) {
 };
 
 var fetchBucketAcl = function (client, bucketName) {
-    return getBucketData(client, bucketName, "getBucketAcl", null, "acl.json");
+    var processor = function (r) {
+        r.Grants.sort(function (a, b) {
+            if (a.Grantee.ID < b.Grantee.ID) return -1;
+            else if (a.Grantee.ID > b.Grantee.ID) return +1;
+            if (a.Permission < b.Permission) return -1;
+            else if (a.Permission > b.Permission) return +1;
+            else return 0;
+        });
+        return r;
+    };
+    return getBucketData(client, bucketName, "getBucketAcl", processor, "acl.json");
 };
 
 var fetchBucketLifecycle = function (client, bucketName) {
-    return getBucketData(client, bucketName, "getBucketLifecycle", null, "lifecycle.json");
+    var processor = function (r) {
+        r.Rules.sort(function (a, b) {
+            if (a.ID < b.ID) return -1;
+            else if (a.ID > b.ID) return +1;
+            if (a.Prefix < b.Prefix) return -1;
+            else if (a.Prefix > b.Prefix) return +1;
+            else return 0;
+        });
+        return r;
+    };
+    return getBucketData(client, bucketName, "getBucketLifecycle", processor, "lifecycle.json");
 };
 
 var fetchBucketLogging = function (client, bucketName) {
@@ -69,11 +89,20 @@ var fetchBucketLogging = function (client, bucketName) {
 };
 
 var fetchBucketPolicy = function (client, bucketName) {
+    // TODO write or delete policy.decoded.json
     return getBucketData(client, bucketName, "getBucketPolicy", null, "policy.json");
 };
 
 var fetchBucketTagging = function (client, bucketName) {
-    return getBucketData(client, bucketName, "getBucketTagging", null, "tags.json");
+    var processor = function (r) {
+        r.TagSet.sort(function (a, b) {
+            if (a.Key.toLowerCase() < b.Key.toLowerCase()) return -1;
+            else if (a.Key.toLowerCase() > b.Key.toLowerCase()) return +1;
+            else return 0;
+        });
+        return r;
+    };
+    return getBucketData(client, bucketName, "getBucketTagging", processor, "tags.json");
 };
 
 var getBucketDetails = function (client, bucketName) {
