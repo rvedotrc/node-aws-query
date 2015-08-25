@@ -2,10 +2,14 @@ var Q = require('q');
 var fs = require('fs');
 
 var AtomicFile = require('./atomic-file');
+var Executor = require('./executor');
+
+var executor = new Executor(10);
 
 exports.collectFromAws = function (client, clientName, method, args) {
     var d = Q.defer();
-    process.nextTick(function () {
+
+    executor.submit(function (nextJob) {
         console.log(clientName, method, args);
         var cb = function (err, data) {
             if (err === null) {
@@ -14,9 +18,11 @@ exports.collectFromAws = function (client, clientName, method, args) {
                 console.log(clientName, method, args, "failed with", err);
                 d.reject(err);
             }
+            nextJob();
         };
         client[method].apply(client, args.concat(cb));
     });
+
     return d.promise;
 };
 
