@@ -16,6 +16,11 @@ var describeInstances = function (client) {
                 else if (a.AlarmArn > b.AlarmArn) return +1;
                 else return 0;
             });
+            for (var i=0; i<r.MetricAlarms.length; ++i) {
+                if (r.MetricAlarms[i].StateReasonData !== undefined) {
+                    r.MetricAlarms[i].StateReasonData = JSON.parse(r.MetricAlarms[i].StateReasonData);
+                }
+            }
             return r;
         })
     );
