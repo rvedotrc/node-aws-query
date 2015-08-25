@@ -41,7 +41,8 @@ var collectBucketDetails = function (client, r) {
             Q([ client, r.Buckets[i].Name ]).spread(getBucketDetails)
         );
     }
-    return Q.all(promises);
+    // XXX allow some to fail e.g. due to 403
+    return Q.allSettled(promises);
 };
 
 var getBucketData = function (client, loc, bucketName, method, processor, filename) {
