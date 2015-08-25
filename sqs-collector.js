@@ -52,7 +52,7 @@ var getQueueAttributes = function(sqs, url) {
             var saveAttrs = Q(r.Attributes)
                 .then(AwsDataUtils.decodeJsonInline("Policy"))
                 .then(AwsDataUtils.decodeJsonInline("RedrivePolicy"))
-                .then(AwsDataUtils.saveJsonTo("var/service/sqs/region/eu-west-1/queues/"+queueName+"/attributes.json"));
+                .then(AwsDataUtils.saveJsonTo("var/service/sqs/region/eu-west-1/queue/"+queueName+"/attributes.json"));
             return saveAttrs;
         });
 };
