@@ -42,7 +42,7 @@ var collectBucketDetails = function (client, r) {
 };
 
 var getBucketData = function (client, bucketName, method, processor, filename) {
-    var asset = "var/s3/buckets/"+bucketName+"/"+filename;
+    var asset = "var/service/s3/buckets/"+bucketName+"/"+filename;
 
     var p = AwsDataUtils.collectFromAws(client, "S3", method, [{Bucket: bucketName}])
         .then(AwsDataUtils.tidyResponseMetadata);
@@ -126,7 +126,7 @@ var getBucketDetails = function (client, bucketName) {
 var collectAll = function () {
     var client = promiseClient();
 
-    var buckets = client.then(listBuckets).then(AwsDataUtils.saveJsonTo("var/s3/list-buckets.json"));
+    var buckets = client.then(listBuckets).then(AwsDataUtils.saveJsonTo("var/service/s3/list-buckets.json"));
     var bucketDetails = Q.all([ client, buckets ]).spread(collectBucketDetails);
 
     return Q.all([

@@ -29,7 +29,7 @@ var describeInstances = function (client) {
 var collectAll = function () {
     var client = promiseClient();
 
-    var alarms = client.then(describeInstances).then(AwsDataUtils.saveJsonTo("var/cloudwatch/describe-alarms.json"));
+    var alarms = client.then(describeInstances).then(AwsDataUtils.saveJsonTo("var/service/cloudwatch/region/eu-west-1/describe-alarms.json"));
 
     return Q.all([
         alarms

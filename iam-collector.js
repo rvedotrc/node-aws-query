@@ -93,13 +93,13 @@ var listAccessKeys = function (iam, listOfUsers) {
 var collectAll = function () {
     var iam = promiseIAM();
 
-    var gcr = iam.then(getCredentialReportCsv).then(AwsDataUtils.saveContentTo("var/iam/credential-report.raw"));
-    var jcr = gcr.then(parseCsv).then(AwsDataUtils.saveJsonTo("var/iam/credential-report.json"));
+    var gcr = iam.then(getCredentialReportCsv).then(AwsDataUtils.saveContentTo("var/service/iam/credential-report.raw"));
+    var jcr = gcr.then(parseCsv).then(AwsDataUtils.saveJsonTo("var/service/iam/credential-report.json"));
 
-    var laa = iam.then(listAccountAliases).then(AwsDataUtils.tidyResponseMetadata).then(AwsDataUtils.saveJsonTo("var/iam/list-account-aliases.json"));
-    var lu = iam.then(listUsers).then(AwsDataUtils.tidyResponseMetadata).then(AwsDataUtils.saveJsonTo("var/iam/list-users.json"));
-    var lr = iam.then(listRoles).then(AwsDataUtils.tidyResponseMetadata).then(AwsDataUtils.saveJsonTo("var/iam/list-roles.json"));
-    var lak = Q.all([ iam, lu ]).spread(listAccessKeys).then(AwsDataUtils.saveJsonTo("var/iam/list-access-keys.json"));
+    var laa = iam.then(listAccountAliases).then(AwsDataUtils.tidyResponseMetadata).then(AwsDataUtils.saveJsonTo("var/service/iam/list-account-aliases.json"));
+    var lu = iam.then(listUsers).then(AwsDataUtils.tidyResponseMetadata).then(AwsDataUtils.saveJsonTo("var/service/iam/list-users.json"));
+    var lr = iam.then(listRoles).then(AwsDataUtils.tidyResponseMetadata).then(AwsDataUtils.saveJsonTo("var/service/iam/list-roles.json"));
+    var lak = Q.all([ iam, lu ]).spread(listAccessKeys).then(AwsDataUtils.saveJsonTo("var/service/iam/list-access-keys.json"));
 
     return Q.all([
         gcr, jcr,

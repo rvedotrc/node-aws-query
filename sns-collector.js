@@ -40,8 +40,8 @@ var listSubscriptions = function (sns) {
 var collectAll = function () {
     var sns = promiseSNS();
 
-    var topics = sns.then(listTopics).then(AwsDataUtils.saveJsonTo("var/sns/list-topics.json"));
-    var subs = sns.then(listSubscriptions).then(AwsDataUtils.saveJsonTo("var/sns/list-subscriptions.json"));
+    var topics = sns.then(listTopics).then(AwsDataUtils.saveJsonTo("var/service/sns/region/eu-west-1/list-topics.json"));
+    var subs = sns.then(listSubscriptions).then(AwsDataUtils.saveJsonTo("var/service/sns/region/eu-west-1/list-subscriptions.json"));
 
     return Q.all([
         topics,

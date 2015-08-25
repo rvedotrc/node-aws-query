@@ -52,7 +52,7 @@ var getQueueAttributes = function(sqs, url) {
             var saveAttrs = Q(r.Attributes)
                 .then(AwsDataUtils.decodeJsonInline("Policy"))
                 .then(AwsDataUtils.decodeJsonInline("RedrivePolicy"))
-                .then(AwsDataUtils.saveJsonTo("var/sqs/queues/"+queueName+"/attributes.json"));
+                .then(AwsDataUtils.saveJsonTo("var/service/sqs/region/eu-west-1/queues/"+queueName+"/attributes.json"));
             return saveAttrs;
         });
 };
@@ -60,8 +60,8 @@ var getQueueAttributes = function(sqs, url) {
 var collectAll = function () {
     var sqs = promiseSQS();
 
-    var queueUrls = sqs.then(listAllQueues).then(AwsDataUtils.saveJsonTo("var/sqs/list-all-queues.json"));
-    var queueNames = queueUrls.then(queueUrlsToNames).then(AwsDataUtils.saveContentTo("var/sqs/list-all-queues.txt"));
+    var queueUrls = sqs.then(listAllQueues).then(AwsDataUtils.saveJsonTo("var/service/sqs/region/eu-west-1/list-all-queues.json"));
+    var queueNames = queueUrls.then(queueUrlsToNames).then(AwsDataUtils.saveContentTo("var/service/sqs/region/eu-west-1/list-all-queues.txt"));
     var queueAttrs = Q.all([ sqs, queueUrls ]).spread(getAllQueueAttributes);
 
     return Q.all([

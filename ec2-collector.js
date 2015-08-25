@@ -29,7 +29,7 @@ var describeInstances = function (ec2) {
 var collectAll = function () {
     var ec2 = promiseEC2();
 
-    var di = ec2.then(describeInstances).then(AwsDataUtils.saveJsonTo("var/ec2/describe-instances.json"));
+    var di = ec2.then(describeInstances).then(AwsDataUtils.saveJsonTo("var/service/ec2/region/eu-west-1/describe-instances.json"));
 
     return Q.all([
         di
