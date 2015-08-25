@@ -5,7 +5,7 @@ var csv = require("fast-csv");
 var AwsDataUtils = require('./aws-data-utils');
 
 var promiseIAM = function () {
-    return Q(new AWS.IAM);
+    return Q(new AWS.IAM());
 };
 
 var generateCredentialReport = function (iam) {
@@ -76,18 +76,18 @@ var listAccessKeys = function (iam, listOfUsers) {
     var all = [];
 
     for (var i=0; i<listOfUsers.Users.length; ++i) {
-        (function (userName) {
-            all.push(
-                Q(true)
-                .then(function () {
-                    return AwsDataUtils.collectFromAws(iam, "IAM", "listAccessKeys", [ { UserName: userName } ])
-                })
+        all.push(
+            Q([ iam, listOfUsers.Users[i].UserName ])
+                .spread(listAccessKeysForUser)
                 .then(AwsDataUtils.tidyResponseMetadata)
-            );
-        })(listOfUsers.Users[i].UserName);
+        );
     }
 
     return Q.all(all).then(AwsDataUtils.joinResponses("AccessKeyMetadata"));
+};
+
+var listAccessKeysForUser = function (iam, userName) {
+    return AwsDataUtils.collectFromAws(iam, "IAM", "listAccessKeys", [ { UserName: userName } ]);
 };
 
 var collectAll = function () {
