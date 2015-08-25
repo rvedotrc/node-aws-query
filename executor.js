@@ -1,8 +1,8 @@
 var Executor = function (max) {
     this.queue = [];
     this.running = 0;
-    this.max = 0 + max;
-    if (this.max < 1) {
+    this.max = Math.floor(0 + max);
+    if (this.max <= 0 || !Number.isFinite(this.max)) {
         throw new Error("Attempt to create Executor with max < 1");
     }
 };

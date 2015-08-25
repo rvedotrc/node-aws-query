@@ -18,9 +18,16 @@ describe("Executor", function () {
     });
 
     it("refuses to start if max < 1", function () {
-        assert.throws(function () {
-            new Executor(0);
-        }, /Attempt to create Executor with max < 1/);
+        var refuses = function(arg) {
+            assert.throws(function () {
+                new Executor(arg);
+            }, /Attempt to create Executor with max < 1/);
+        };
+        refuses(0);
+        refuses(0.9);
+        refuses(null);
+        refuses(NaN);
+        refuses('x');
     });
 
     it("runs a job", function (mochaDone) {
