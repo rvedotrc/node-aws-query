@@ -162,20 +162,32 @@ describe("Executor", function () {
         var e = new Executor(1);
 
         var arr = [];
-        var f1 = function (nextJob, arg) { arr.push([ "f1", arg ]); nextJob(); };
-        var f2 = function (nextJob, arg) { arr.push([ "f2", arg ]); nextJob(); };
+        var recordArgs = function (nextJob) {
+            arr.push(arguments);
+            nextJob();
+        };
 
-        e.submit(f1);
-        e.submit(f1, {test: 'args'});
-        e.submit(f2, ['more testing']);
-        e.submit(f2, ['extra arguments'], 'are ignored');
+        e.submit(recordArgs);
+        e.submit(recordArgs, {test: 'args'});
+        e.submit(recordArgs, 'more testing');
+        e.submit(recordArgs, 'extra arguments', 'are allowed');
 
         setTimeout(function () {
             arr.length.should.eql(4);
-            arr[0].should.eql(['f1', undefined]);
-            arr[1].should.eql(['f1', {test: 'args'}]);
-            arr[2].should.eql(['f2', ['more testing']]);
-            arr[3].should.eql(['f2', ['extra arguments']]);
+
+            // Just one arg - nextJob
+            arr[0].length.should.eql(1);
+
+            arr[1].length.should.eql(2);
+            arr[1][1].should.eql({test: 'args'});
+
+            arr[2].length.should.eql(2);
+            arr[2][1].should.eql('more testing');
+
+            arr[3].length.should.eql(3);
+            arr[3][1].should.eql('extra arguments');
+            arr[3][2].should.eql('are allowed');
+
             mochaDone();
         }, 10);
     });

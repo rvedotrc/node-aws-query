@@ -19,8 +19,8 @@ Executor.prototype.toString = function () {
     return "Executor" + JSON.stringify(this.inspect());
 };
 
-Executor.prototype.submit = function (job, arg) {
-    this.queue.push([job, arg]);
+Executor.prototype.submit = function (job) {
+    this.queue.push(arguments);
     if (this.running < this.max) {
         ++this.running;
         var executor = this;
@@ -36,13 +36,25 @@ Executor.prototype.runNextJob = function () {
         return;
     }
 
-    var functionAndArg = this.queue.shift();
+    var functionAndArgs = this.queue.shift();
+
+    // Got a better way?
+    var args = [];
+    for (var i=0; i<functionAndArgs.length; ++i) {
+        args[i] = functionAndArgs[i];
+    }
+
+    // arg 0 was the job function...
+    var func = args[0];
+
+    // ... replace it by the nextJob callback
     var executor = this;
+    args[0] = function () {
+        executor.runNextJob();
+    };
 
     try {
-        functionAndArg[0](function () {
-            executor.runNextJob();
-        }, functionAndArg[1]);
+        func.apply(null, args);
     } catch (error) {
         this.runNextJob();
     }
