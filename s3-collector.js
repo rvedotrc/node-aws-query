@@ -8,7 +8,7 @@ var promiseClient = function () {
 };
 
 var getLocationForBucket = function (client, bucketName) {
-    return AwsDataUtils.collectFromAws(client, "S3", "getBucketLocation", [{Bucket: bucketName}])
+    return AwsDataUtils.collectFromAws(client, "S3", "getBucketLocation", {Bucket: bucketName})
         .then(function (r) {
             console.log("location for", bucketName, "is", r.LocationConstraint);
             return r.LocationConstraint;
@@ -22,7 +22,7 @@ var getClientForLocation = function (loc) {
 
 var listBuckets = function (client) {
     // Data oddity: this data has {Owner: {DisplayName: x, ID: x}}
-    return AwsDataUtils.collectFromAws(client, "S3", "listBuckets", [])
+    return AwsDataUtils.collectFromAws(client, "S3", "listBuckets", {}, "Buckets")
         .then(AwsDataUtils.tidyResponseMetadata)
         .then(function (r) {
             r.Buckets.sort(function (a, b) {

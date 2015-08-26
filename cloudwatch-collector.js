@@ -8,7 +8,7 @@ var promiseClient = function () {
 };
 
 var describeInstances = function (client) {
-    return(AwsDataUtils.collectFromAws(client, "CloudWatch", "describeAlarms", [])
+    return(AwsDataUtils.collectFromAws(client, "CloudWatch", "describeAlarms", {}, "MetricAlarms")
         .then(AwsDataUtils.tidyResponseMetadata)
         .then(function (r) {
             r.MetricAlarms.sort(function (a, b) {

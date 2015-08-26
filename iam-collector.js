@@ -9,11 +9,11 @@ var promiseIAM = function () {
 };
 
 var generateCredentialReport = function (iam) {
-    return AwsDataUtils.collectFromAws(iam, "IAM", "generateCredentialReport", []);
+    return AwsDataUtils.collectFromAws(iam, "IAM", "generateCredentialReport");
 };
 
 var getCredentialReport = function (iam) {
-    return AwsDataUtils.collectFromAws(iam, "IAM", "getCredentialReport", [])
+    return AwsDataUtils.collectFromAws(iam, "IAM", "getCredentialReport")
         .fail(function (v) {
             if (v.statusCode === 410) {
                 // generate (not present, or expired)
@@ -54,7 +54,7 @@ var parseCsv = function (csvString) {
 };
 
 var listRoles = function (iam) {
-    return AwsDataUtils.collectFromAws(iam, "IAM", "listRoles", [])
+    return AwsDataUtils.collectFromAws(iam, "IAM", "listRoles", {}, "Roles")
         .then(function (v) {
             var roles = v.Roles;
             for (var i=0; i<roles.length; ++i) {
@@ -65,11 +65,11 @@ var listRoles = function (iam) {
 };
 
 var listUsers = function (iam) {
-    return AwsDataUtils.collectFromAws(iam, "IAM", "listUsers", []);
+    return AwsDataUtils.collectFromAws(iam, "IAM", "listUsers", {}, "Users");
 };
 
 var listAccountAliases = function (iam) {
-    return AwsDataUtils.collectFromAws(iam, "IAM", "listAccountAliases", []);
+    return AwsDataUtils.collectFromAws(iam, "IAM", "listAccountAliases");
 };
 
 var listAccessKeys = function (iam, listOfUsers) {
@@ -87,7 +87,7 @@ var listAccessKeys = function (iam, listOfUsers) {
 };
 
 var listAccessKeysForUser = function (iam, userName) {
-    return AwsDataUtils.collectFromAws(iam, "IAM", "listAccessKeys", [ { UserName: userName } ]);
+    return AwsDataUtils.collectFromAws(iam, "IAM", "listAccessKeys", { UserName: userName });
 };
 
 var collectAll = function () {

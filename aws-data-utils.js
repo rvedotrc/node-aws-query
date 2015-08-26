@@ -1,15 +1,36 @@
 var Q = require('q');
 var fs = require('fs');
+var merge = require('merge');
 
 var AtomicFile = require('./atomic-file');
 var Executor = require('./executor');
 
 var executor = new Executor(10);
 
-var doCollectFromAws = function(nextJob, deferred, client, clientName, method, args) {
+var doCollectFromAws = function(nextJob, deferred, client, clientName, method, args, listKey, joinTo) {
     console.log(clientName, method, args);
     var cb = function (err, data) {
         if (err === null) {
+            console.log("got data", data);
+
+            if (joinTo !== undefined) {
+                if (!listKey) return deferred.reject(new Error("joinTo with no listKey"));
+                data[listKey] = joinTo[listKey].concat(data[listKey]);
+            }
+
+            if (data.IsTruncated === true) {
+                if (!data.Marker) {
+                    return deferred.reject(new Error("response IsTruncated, but has no Marker"));
+                }
+                args = merge(args, { Marker: data.Marker });
+                console.log("data so far:", data);
+                console.log("truncated, will query again with Marker", data.Marker);
+                if (!listKey) {
+                    return deferred.reject(new Error("response IsTruncated, but no listKey provided"));
+                }
+                return doCollectFromAws(nextJob, deferred, client, clientName, method, args, listKey, data);
+            }
+
             deferred.resolve(data);
         } else {
             console.log(clientName, method, args, "failed with", err);
@@ -17,12 +38,12 @@ var doCollectFromAws = function(nextJob, deferred, client, clientName, method, a
         }
         nextJob();
     };
-    client[method].apply(client, args.concat(cb));
+    client[method].apply(client, [args, cb]);
 };
 
-exports.collectFromAws = function (client, clientName, method, args) {
+exports.collectFromAws = function (client, clientName, method, args, listKey) {
     var deferred = Q.defer();
-    executor.submit(doCollectFromAws, deferred, client, clientName, method, args);
+    executor.submit(doCollectFromAws, deferred, client, clientName, method, args, listKey);
     return deferred.promise;
 };
 

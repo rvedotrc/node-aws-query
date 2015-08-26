@@ -14,7 +14,7 @@ var listAllQueues = function(sqs, prefix) {
     var expander = new PrefixTruncationExpander(
         function (p) {
             console.log("do listQueues prefix =", p);
-            return AwsDataUtils.collectFromAws(sqs, "SQS", "listQueues", [ { QueueNamePrefix: p } ])
+            return AwsDataUtils.collectFromAws(sqs, "SQS", "listQueues", { QueueNamePrefix: p }, "QueueUrls")
                 .then(function (r) {
                     return r.QueueUrls || [];
                 });

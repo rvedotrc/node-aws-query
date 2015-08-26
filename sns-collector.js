@@ -8,7 +8,7 @@ var promiseSNS = function () {
 };
 
 var listTopics = function (sns) {
-    return AwsDataUtils.collectFromAws(sns, "SNS", "listTopics", [])
+    return AwsDataUtils.collectFromAws(sns, "SNS", "listTopics", {}, "Topics")
         .then(AwsDataUtils.tidyResponseMetadata)
         .then(function (r) {
             r.Topics.sort(function (a, b) {
@@ -21,7 +21,7 @@ var listTopics = function (sns) {
 };
 
 var listSubscriptions = function (sns) {
-    return AwsDataUtils.collectFromAws(sns, "SNS", "listSubscriptions", [])
+    return AwsDataUtils.collectFromAws(sns, "SNS", "listSubscriptions", {}, "Subscriptions")
         .then(AwsDataUtils.tidyResponseMetadata)
         .then(function (r) {
             r.Subscriptions.sort(function (a, b) {
