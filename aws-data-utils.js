@@ -66,21 +66,6 @@ exports.decodeJsonInline = function (key) {
     };
 };
 
-exports.joinResponses = function (key) {
-    return function (responses) {
-        var answer = {};
-        answer[key] = [];
-
-        // TODO warn if any response contains any key other than 'key'
-
-        for (var i=0; i<responses.length; ++i) {
-            answer[key] = answer[key].concat(responses[i][key]);
-        }
-
-        return answer;
-    };
-};
-
 exports.deleteAsset = function (filename) {
     return Q.nfapply(fs.unlink, [filename])
         .then(function () {

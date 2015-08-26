@@ -72,6 +72,21 @@ var listAccountAliases = function (iam) {
     return AwsDataUtils.collectFromAws(iam, "IAM", "listAccountAliases");
 };
 
+var joinResponses = function (key) {
+    return function (responses) {
+        var answer = {};
+        answer[key] = [];
+
+        // TODO what if any response contains any key other than 'key'?
+
+        for (var i=0; i<responses.length; ++i) {
+            answer[key] = answer[key].concat(responses[i][key]);
+        }
+
+        return answer;
+    };
+};
+
 var listAccessKeys = function (iam, listOfUsers) {
     var all = [];
 
@@ -83,7 +98,7 @@ var listAccessKeys = function (iam, listOfUsers) {
         );
     }
 
-    return Q.all(all).then(AwsDataUtils.joinResponses("AccessKeyMetadata"));
+    return Q.all(all).then(joinResponses("AccessKeyMetadata"));
 };
 
 var listAccessKeysForUser = function (iam, userName) {
