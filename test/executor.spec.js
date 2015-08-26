@@ -54,6 +54,13 @@ describe("Executor", function () {
             e.submit(function (nextJob2) {
                 // 3. First job has completed; second job is running
                 assertCounts(e, 0, 1, 1);
+
+                setTimeout(function () {
+                    // 4. All done
+                    assertCounts(e, 0, 0, 1);
+                    mochaDone();
+                }, 5);
+
                 nextJob2();
             });
 
@@ -61,12 +68,6 @@ describe("Executor", function () {
             assertCounts(e, 1, 1, 1);
             nextJob();
         });
-
-        setTimeout(function () {
-            // 4. All done
-            assertCounts(e, 0, 0, 1);
-            mochaDone();
-        }, 10);
     });
 
     it("runs jobs in parallel", function (mochaDone) {
