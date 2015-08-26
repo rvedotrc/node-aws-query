@@ -56,6 +56,7 @@ Executor.prototype.runNextJob = function () {
     try {
         func.apply(null, args);
     } catch (error) {
+        console.log("Job threw an error:", (error.stack ? error.stack : error));
         this.runNextJob();
     }
 };
