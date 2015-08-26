@@ -5,16 +5,20 @@ var Executor = require("../executor");
 
 describe("Executor", function () {
 
-    var assertCounts = function (executor, queue, running, max) {
+    var assertCounts = function (executor, queue, running, max, errors) {
+        if (errors === undefined) {
+            errors = 0;
+        }
         var state = executor.inspect();
         state.queue.should.eql(queue);
         state.running.should.eql(running);
         state.max.should.eql(max);
+        state.errors.should.eql(errors);
     };
 
     it("stringifies", function () {
         var e = new Executor(5);
-        e.toString().should.eql('Executor{"queue":0,"running":0,"max":5}');
+        e.toString().should.eql('Executor{"queue":0,"running":0,"max":5,"errors":0}');
     });
 
     it("refuses to start if max < 1", function () {
@@ -83,9 +87,10 @@ describe("Executor", function () {
                 nextJob2();
             });
 
-            // 2. Second job is queued (but will start imminently); first job
-            // is running
-            assertCounts(e, 1, 1, 2);
+            // 2. Second job is queued (but will start imminently); two
+            // runners (but one hasn't started yet)
+            assertCounts(e, 1, 2, 2);
+            // FIXME assert fails here don't cause the test to fail!
             // First job ends in a while
             setTimeout(nextJob, 10);
         });
@@ -105,8 +110,8 @@ describe("Executor", function () {
             assertCounts(e, 0, 1, 1);
 
             e.submit(function (nextJob2) {
-                // 4. Second job is running
-                assertCounts(e, 0, 1, 1);
+                // 4. Second job is running; 1 error
+                assertCounts(e, 0, 1, 1, 1);
                 nextJob2();
                 mochaDone();
             });
