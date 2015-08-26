@@ -48,39 +48,49 @@ describe("Executor", function () {
         var e = new Executor(1);
 
         e.submit(function (nextJob) {
+            // 1. First job is running
             assertCounts(e, 0, 1, 1);
 
             e.submit(function (nextJob2) {
+                // 3. First job has completed; second job is running
                 assertCounts(e, 0, 1, 1);
                 nextJob2();
             });
 
+            // 2. Second job is waiting; first job is running
             assertCounts(e, 1, 1, 1);
             nextJob();
         });
 
         setTimeout(function () {
+            // 4. All done
             assertCounts(e, 0, 0, 1);
             mochaDone();
-        }, 50);
+        }, 10);
     });
 
     it("runs jobs in parallel", function (mochaDone) {
         var e = new Executor(2);
 
         e.submit(function (nextJob) {
+            // 1. First job is running
             assertCounts(e, 0, 1, 2);
 
             e.submit(function (nextJob2) {
+                // 3. Both jobs are running
                 assertCounts(e, 0, 2, 2);
                 nextJob2();
             });
 
+            // 2. Second job is queued (but will start imminently); first job
+            // is running
             assertCounts(e, 1, 1, 2);
+            // First job ends in a while
             setTimeout(nextJob, 10);
         });
 
         setTimeout(function () {
+            // 4. All done
             assertCounts(e, 0, 0, 2);
             mochaDone();
         }, 20);
@@ -90,16 +100,20 @@ describe("Executor", function () {
         var e = new Executor(1);
 
         e.submit(function (nextJob) {
+            // 1. First job is running
             assertCounts(e, 0, 1, 1);
 
             e.submit(function (nextJob2) {
+                // 4. Second job is running
                 assertCounts(e, 0, 1, 1);
                 nextJob2();
                 mochaDone();
             });
 
+            // 2. Second job is queued; first job is running
             assertCounts(e, 1, 1, 1);
 
+            // 3. First job crashes before returning
             throw new Error('bang');
             // nextJob not called
         });
@@ -108,6 +122,7 @@ describe("Executor", function () {
     it('starts new runners as required', function (mochaDone) {
         var e = new Executor(2);
 
+        // A job that takes ~ 10ms to run
         var job = function (nextJob) {
             setTimeout(nextJob, 10);
         };
@@ -116,22 +131,28 @@ describe("Executor", function () {
         e.submit(job);
 
         setTimeout(function () {
+            // 1. At +5ms, jobs 1 & 2 are running
             assertCounts(e, 0, 2, 2);
 
             setTimeout(function () {
+                // 2. At +15ms, nothing is running (jobs 1 & 2 ended at +10ms)
                 assertCounts(e, 0, 0, 2);
 
+                // 3. Submit a job; a runner should start
                 e.submit(job);
+
                 setTimeout(function () {
+                    // 4. At +20ms, job 3 should be running
                     assertCounts(e, 0, 1, 2);
 
                     setTimeout(function () {
+                        // 5. At +30ms, nothing is running (job 3 ended at +25ms)
                         assertCounts(e, 0, 0, 2);
                         mochaDone();
-                    }, 20);
+                    }, 10);
                 }, 5);
 
-            }, 20);
+            }, 10);
 
         }, 5);
     });
