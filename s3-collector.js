@@ -54,7 +54,7 @@ var getBucketData = function (client, loc, bucketName, method, processor, filena
 
     var asset = "var/service/s3/location/"+loc+"/bucket/"+bucketName+"/"+filename;
 
-    var p = AwsDataUtils.collectFromAws(client, "S3", method, [{Bucket: bucketName}])
+    var p = AwsDataUtils.collectFromAws(client, "S3", method, {Bucket: bucketName})
         .then(AwsDataUtils.tidyResponseMetadata);
 
     if (processor) {

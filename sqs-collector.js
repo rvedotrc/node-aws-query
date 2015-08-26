@@ -45,7 +45,7 @@ var attributesToCollect = [
 ];
 
 var getQueueAttributes = function(sqs, url) {
-    return AwsDataUtils.collectFromAws(sqs, "SQS", "getQueueAttributes", [ {QueueUrl: url, AttributeNames: attributesToCollect} ])
+    return AwsDataUtils.collectFromAws(sqs, "SQS", "getQueueAttributes", {QueueUrl: url, AttributeNames: attributesToCollect})
         .then(function (r) {
             var queueName = path.basename(url);
             // Change from ruby code: decode policies inline, no separate asset
