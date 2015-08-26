@@ -6,24 +6,24 @@ var Executor = require('./executor');
 
 var executor = new Executor(10);
 
+var doCollectFromAws = function(nextJob, deferred, client, clientName, method, args) {
+    console.log(clientName, method, args);
+    var cb = function (err, data) {
+        if (err === null) {
+            deferred.resolve(data);
+        } else {
+            console.log(clientName, method, args, "failed with", err);
+            deferred.reject(err);
+        }
+        nextJob();
+    };
+    client[method].apply(client, args.concat(cb));
+};
+
 exports.collectFromAws = function (client, clientName, method, args) {
-    var d = Q.defer();
-
-    executor.submit(function (nextJob) {
-        console.log(clientName, method, args);
-        var cb = function (err, data) {
-            if (err === null) {
-                d.resolve(data);
-            } else {
-                console.log(clientName, method, args, "failed with", err);
-                d.reject(err);
-            }
-            nextJob();
-        };
-        client[method].apply(client, args.concat(cb));
-    });
-
-    return d.promise;
+    var deferred = Q.defer();
+    executor.submit(doCollectFromAws, deferred, client, clientName, method, args);
+    return deferred.promise;
 };
 
 exports.tidyResponseMetadata = function (data) {
