@@ -11,8 +11,6 @@ var doCollectFromAws = function(nextJob, deferred, client, clientName, method, a
     console.log(clientName, method, args);
     var cb = function (err, data) {
         if (err === null) {
-            console.log("got data", data);
-
             if (joinTo !== undefined) {
                 if (!listKey) return deferred.reject(new Error("joinTo with no listKey"));
                 data[listKey] = joinTo[listKey].concat(data[listKey]);
@@ -23,8 +21,7 @@ var doCollectFromAws = function(nextJob, deferred, client, clientName, method, a
                     return deferred.reject(new Error("response IsTruncated, but has no Marker"));
                 }
                 args = merge(args, { Marker: data.Marker });
-                console.log("data so far:", data);
-                console.log("truncated, will query again with Marker", data.Marker);
+                console.log("truncated (got", data[listKey].length, "results so far), will query again with Marker", data.Marker);
                 if (!listKey) {
                     return deferred.reject(new Error("response IsTruncated, but no listKey provided"));
                 }
