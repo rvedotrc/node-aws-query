@@ -16,6 +16,7 @@ var doCollectFromAws = function(nextJob, deferred, client, clientName, method, a
                 data[listKey] = joinTo[listKey].concat(data[listKey]);
             }
 
+            // Marker / IsTruncated -style pagination
             if (data.IsTruncated === true) {
                 if (!data.Marker) {
                     return deferred.reject(new Error("response IsTruncated, but has no Marker"));
@@ -24,6 +25,16 @@ var doCollectFromAws = function(nextJob, deferred, client, clientName, method, a
                 console.log("truncated (got", data[listKey].length, "results so far), will query again with Marker", data.Marker);
                 if (!listKey) {
                     return deferred.reject(new Error("response IsTruncated, but no listKey provided"));
+                }
+                return doCollectFromAws(nextJob, deferred, client, clientName, method, args, listKey, data);
+            }
+
+            // NextToken -style pagination
+            if (data.NextToken) {
+                args = merge(args, { NextToken: data.NextToken });
+                console.log("truncated (got", data[listKey].length, "results so far), will query again with NextToken", data.NextToken);
+                if (!listKey) {
+                    return deferred.reject(new Error("response has NextToken, but no listKey provided"));
                 }
                 return doCollectFromAws(nextJob, deferred, client, clientName, method, args, listKey, data);
             }
