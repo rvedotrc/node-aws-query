@@ -19,8 +19,8 @@ Executor.prototype.toString = function () {
     return "Executor" + JSON.stringify(this.inspect());
 };
 
-Executor.prototype.submit = function (job) {
-    this.queue.push(job);
+Executor.prototype.submit = function (job, arg) {
+    this.queue.push([job, arg]);
     if (this.running < this.max) {
         ++this.running;
         var executor = this;
@@ -36,13 +36,13 @@ Executor.prototype.runNextJob = function () {
         return;
     }
 
-    var f = this.queue.shift();
+    var functionAndArg = this.queue.shift();
     var executor = this;
 
     try {
-        f(function () {
+        functionAndArg[0](function () {
             executor.runNextJob();
-        });
+        }, functionAndArg[1]);
     } catch (error) {
         this.runNextJob();
     }

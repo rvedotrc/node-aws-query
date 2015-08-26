@@ -158,5 +158,27 @@ describe("Executor", function () {
         }, 5);
     });
 
+    it('allows an optional argument to be submitted', function (mochaDone) {
+        var e = new Executor(1);
+
+        var arr = [];
+        var f1 = function (nextJob, arg) { arr.push([ "f1", arg ]); nextJob(); };
+        var f2 = function (nextJob, arg) { arr.push([ "f2", arg ]); nextJob(); };
+
+        e.submit(f1);
+        e.submit(f1, {test: 'args'});
+        e.submit(f2, ['more testing']);
+        e.submit(f2, ['extra arguments'], 'are ignored');
+
+        setTimeout(function () {
+            arr.length.should.eql(4);
+            arr[0].should.eql(['f1', undefined]);
+            arr[1].should.eql(['f1', {test: 'args'}]);
+            arr[2].should.eql(['f2', ['more testing']]);
+            arr[3].should.eql(['f2', ['extra arguments']]);
+            mochaDone();
+        }, 10);
+    });
+
 });
 
