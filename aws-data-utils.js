@@ -90,6 +90,11 @@ exports.paginationHelper = function (responseTokenField, requestTokenField, resp
             return merge(args, toMerge);
         },
         promiseOfJoinedData: function (data1, data2) {
+            if (!data1[responseListField] || !data2[responseListField]) {
+                console.log("data1", data1);
+                console.log("data2", data2);
+                throw new Error("Can't join pages - at least one of them is missing " + responseListField);
+            }
             var toMerge = {};
             toMerge[responseListField] = data1[responseListField].concat(data2[responseListField]);
             return merge(data2, toMerge);
