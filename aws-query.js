@@ -2,6 +2,7 @@ var CloudWatchCollector = require('./cloudwatch-collector');
 var DynamoDB = require('./dynamodb-collector');
 var EC2Collector = require('./ec2-collector');
 var IAMCollector = require('./iam-collector');
+var LambdaCollector = require('./lambda-collector');
 var S3Collector = require('./s3-collector');
 var SNSCollector = require('./sns-collector');
 var SQSCollector = require('./sqs-collector');
@@ -19,6 +20,7 @@ Q.all([
     DynamoDB.collectAll(clientConfig),
     EC2Collector.collectAll(clientConfig),
     IAMCollector.collectAll(clientConfig),
+    LambdaCollector.collectAll(clientConfig),
     S3Collector.collectAll(clientConfig),
     SNSCollector.collectAll(clientConfig),
     SQSCollector.collectAll(clientConfig),
