@@ -23,6 +23,7 @@ var promiseClient = function (clientConfig, region) {
 };
 
 var listTopics = function (client) {
+    // pagination: NextToken
     return AwsDataUtils.collectFromAws(client, "SNS", "listTopics", {}, "Topics")
         .then(AwsDataUtils.tidyResponseMetadata)
         .then(function (r) {
@@ -36,6 +37,7 @@ var listTopics = function (client) {
 };
 
 var listSubscriptions = function (client) {
+    // pagination: NextToken
     return AwsDataUtils.collectFromAws(client, "SNS", "listSubscriptions", {}, "Subscriptions")
         .then(AwsDataUtils.tidyResponseMetadata)
         .then(function (r) {

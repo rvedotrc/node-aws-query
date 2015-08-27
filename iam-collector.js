@@ -54,6 +54,7 @@ var parseCsv = function (csvString) {
 };
 
 var listRoles = function (client) {
+    // pagination: IsTruncated / Marker
     return AwsDataUtils.collectFromAws(client, "IAM", "listRoles", {}, "Roles")
         .then(function (v) {
             var roles = v.Roles;
@@ -65,10 +66,12 @@ var listRoles = function (client) {
 };
 
 var listUsers = function (client) {
+    // pagination: IsTruncated / Marker
     return AwsDataUtils.collectFromAws(client, "IAM", "listUsers", {}, "Users");
 };
 
 var listAccountAliases = function (client) {
+    // IsTruncated
     return AwsDataUtils.collectFromAws(client, "IAM", "listAccountAliases");
 };
 
@@ -102,6 +105,7 @@ var listAccessKeys = function (client, listOfUsers) {
 };
 
 var listAccessKeysForUser = function (client, userName) {
+    // IsTruncated
     return AwsDataUtils.collectFromAws(client, "IAM", "listAccessKeys", { UserName: userName });
 };
 

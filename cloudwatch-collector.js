@@ -23,6 +23,7 @@ var promiseClient = function (clientConfig, region) {
 };
 
 var describeInstances = function (client) {
+    // pagination: NextToken / ?
     return(AwsDataUtils.collectFromAws(client, "CloudWatch", "describeAlarms", {}, "MetricAlarms")
         .then(AwsDataUtils.tidyResponseMetadata)
         .then(function (r) {

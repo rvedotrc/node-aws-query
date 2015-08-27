@@ -11,6 +11,18 @@ var doCollectFromAws = function(nextJob, deferred, client, clientName, method, a
     console.log(clientName, method, args);
     var cb = function (err, data) {
         if (err === null) {
+            // To collect information on which method calls return what keys,
+            // particularly with regards to pagination.  The docs don't seem
+            // consistent.
+            var apiMeta = {
+                ClientName: clientName,
+                Method: method,
+                Region: client.config.region,
+                RequestKeys: Object.keys(args || {}).sort(),
+                ResponseKeys: Object.keys(data || {}).sort()
+            };
+            console.log("apiMeta =", JSON.stringify(apiMeta));
+
             if (joinTo !== undefined) {
                 if (!listKey) return deferred.reject(new Error("joinTo with no listKey"));
                 data[listKey] = joinTo[listKey].concat(data[listKey]);
@@ -28,6 +40,8 @@ var doCollectFromAws = function(nextJob, deferred, client, clientName, method, a
                 }
                 return doCollectFromAws(nextJob, deferred, client, clientName, method, args, listKey, data);
             }
+
+            // NextMarker -> Marker - Lambda listFunctions
 
             // NextToken -style pagination
             if (data.NextToken) {

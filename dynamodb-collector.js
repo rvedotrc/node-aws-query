@@ -27,6 +27,8 @@ var listTables = function (client, lastEvaluatedTableName) {
     var args = {};
     if (lastEvaluatedTableName) args.ExclusiveStartTableName = lastEvaluatedTableName;
 
+    // pagination: LastEvaluatedTableName -> ExclusiveStartTableName
+
     return AwsDataUtils.collectFromAws(client, "DynamoDB", "listTables", args, "TableNames")
         .then(function (r) {
             if (!r.LastEvaluatedTableName) {
