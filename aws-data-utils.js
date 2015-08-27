@@ -42,7 +42,16 @@ var doCollectFromAws = function(nextJob, deferred, client, clientName, method, a
             deferred.resolve(data);
         } else {
             console.log(clientName, method, args, "failed with", err);
-            deferred.reject(err);
+
+            if (err.code === 'Throttling') {
+                var delay = 1000 + Math.random() * 5000;
+                console.log("Will try again in", delay, "ms");
+                setTimeout(function () {
+                    client[method].apply(client, [args, cb]);
+                }, delay);
+            } else {
+                deferred.reject(err);
+            }
         }
         nextJob();
     };
