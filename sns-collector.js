@@ -1,10 +1,25 @@
 var AWS = require('aws-sdk');
 var Q = require('q');
+var merge = require('merge');
 
 var AwsDataUtils = require('./aws-data-utils');
 
-var promiseClient = function () {
-    return Q(new AWS.SNS({ region: 'eu-west-1' }));
+// https://docs.aws.amazon.com/general/latest/gr/rande.html#sns_region
+var regions = [
+    "us-east-1",
+    "us-west-2",
+    "us-west-1",
+    "eu-west-1",
+    "eu-central-1",
+    "ap-southeast-1",
+    "ap-southeast-2",
+    "ap-northeast-1",
+    "sa-east-1"
+];
+
+var promiseClient = function (clientConfig, region) {
+    var config = merge(clientConfig, { region: region });
+    return Q(new AWS.SNS(config));
 };
 
 var listTopics = function (client) {
@@ -37,16 +52,26 @@ var listSubscriptions = function (client) {
         });
 };
 
-var collectAll = function () {
-    var client = promiseClient();
+var collectAllForRegion = function (clientConfig, region) {
+    var client = promiseClient(clientConfig, region);
 
-    var topics = client.then(listTopics).then(AwsDataUtils.saveJsonTo("var/service/sns/region/eu-west-1/list-topics.json"));
-    var subs = client.then(listSubscriptions).then(AwsDataUtils.saveJsonTo("var/service/sns/region/eu-west-1/list-subscriptions.json"));
+    var topics = client.then(listTopics).then(AwsDataUtils.saveJsonTo("var/service/sns/region/"+region+"/list-topics.json"));
+    var subs = client.then(listSubscriptions).then(AwsDataUtils.saveJsonTo("var/service/sns/region/"+region+"/list-subscriptions.json"));
 
     return Q.all([
         topics,
         subs
     ]);
+};
+
+var collectAll = function (clientConfig) {
+    var promises = [];
+
+    for (var i=0; i<regions.length; ++i) {
+        promises.push(collectAllForRegion(clientConfig, regions[i]));
+    }
+
+    return Q.all(promises);
 };
 
 module.exports = {
