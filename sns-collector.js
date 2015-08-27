@@ -3,12 +3,12 @@ var Q = require('q');
 
 var AwsDataUtils = require('./aws-data-utils');
 
-var promiseSNS = function () {
+var promiseClient = function () {
     return Q(new AWS.SNS({ region: 'eu-west-1' }));
 };
 
-var listTopics = function (sns) {
-    return AwsDataUtils.collectFromAws(sns, "SNS", "listTopics", {}, "Topics")
+var listTopics = function (client) {
+    return AwsDataUtils.collectFromAws(client, "SNS", "listTopics", {}, "Topics")
         .then(AwsDataUtils.tidyResponseMetadata)
         .then(function (r) {
             r.Topics.sort(function (a, b) {
@@ -20,8 +20,8 @@ var listTopics = function (sns) {
         });
 };
 
-var listSubscriptions = function (sns) {
-    return AwsDataUtils.collectFromAws(sns, "SNS", "listSubscriptions", {}, "Subscriptions")
+var listSubscriptions = function (client) {
+    return AwsDataUtils.collectFromAws(client, "SNS", "listSubscriptions", {}, "Subscriptions")
         .then(AwsDataUtils.tidyResponseMetadata)
         .then(function (r) {
             r.Subscriptions.sort(function (a, b) {
@@ -38,10 +38,10 @@ var listSubscriptions = function (sns) {
 };
 
 var collectAll = function () {
-    var sns = promiseSNS();
+    var client = promiseClient();
 
-    var topics = sns.then(listTopics).then(AwsDataUtils.saveJsonTo("var/service/sns/region/eu-west-1/list-topics.json"));
-    var subs = sns.then(listSubscriptions).then(AwsDataUtils.saveJsonTo("var/service/sns/region/eu-west-1/list-subscriptions.json"));
+    var topics = client.then(listTopics).then(AwsDataUtils.saveJsonTo("var/service/sns/region/eu-west-1/list-topics.json"));
+    var subs = client.then(listSubscriptions).then(AwsDataUtils.saveJsonTo("var/service/sns/region/eu-west-1/list-subscriptions.json"));
 
     return Q.all([
         topics,

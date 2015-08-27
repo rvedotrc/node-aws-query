@@ -4,23 +4,23 @@ var csv = require("fast-csv");
 
 var AwsDataUtils = require('./aws-data-utils');
 
-var promiseIAM = function () {
+var promiseClient = function () {
     return Q(new AWS.IAM());
 };
 
-var generateCredentialReport = function (iam) {
-    return AwsDataUtils.collectFromAws(iam, "IAM", "generateCredentialReport");
+var generateCredentialReport = function (client) {
+    return AwsDataUtils.collectFromAws(client, "IAM", "generateCredentialReport");
 };
 
-var getCredentialReport = function (iam) {
-    return AwsDataUtils.collectFromAws(iam, "IAM", "getCredentialReport")
+var getCredentialReport = function (client) {
+    return AwsDataUtils.collectFromAws(client, "IAM", "getCredentialReport")
         .fail(function (v) {
             if (v.statusCode === 410) {
                 // generate (not present, or expired)
-                return Q(iam).then(generateCredentialReport).delay(2000).thenResolve(iam).then(getCredentialReport);
+                return Q(client).then(generateCredentialReport).delay(2000).thenResolve(client).then(getCredentialReport);
             } else if (v.statusCode === 404) {
                 // not ready (generation in progress)
-                return Q(iam).delay(2000).then(getCredentialReport);
+                return Q(client).delay(2000).then(getCredentialReport);
             } else {
                 // other error
                 return Q.reject(v);
@@ -28,8 +28,8 @@ var getCredentialReport = function (iam) {
         });
 };
 
-var getCredentialReportCsv = function (iam) {
-    return getCredentialReport(iam)
+var getCredentialReportCsv = function (client) {
+    return getCredentialReport(client)
         .then(function (v) {
             if (v.ReportFormat !== 'text/csv') throw new Error('getCredentialReport did not return text/csv');
             var csv = new Buffer(v.Content, 'base64').toString();
@@ -53,8 +53,8 @@ var parseCsv = function (csvString) {
     return d.promise;
 };
 
-var listRoles = function (iam) {
-    return AwsDataUtils.collectFromAws(iam, "IAM", "listRoles", {}, "Roles")
+var listRoles = function (client) {
+    return AwsDataUtils.collectFromAws(client, "IAM", "listRoles", {}, "Roles")
         .then(function (v) {
             var roles = v.Roles;
             for (var i=0; i<roles.length; ++i) {
@@ -64,12 +64,12 @@ var listRoles = function (iam) {
         });
 };
 
-var listUsers = function (iam) {
-    return AwsDataUtils.collectFromAws(iam, "IAM", "listUsers", {}, "Users");
+var listUsers = function (client) {
+    return AwsDataUtils.collectFromAws(client, "IAM", "listUsers", {}, "Users");
 };
 
-var listAccountAliases = function (iam) {
-    return AwsDataUtils.collectFromAws(iam, "IAM", "listAccountAliases");
+var listAccountAliases = function (client) {
+    return AwsDataUtils.collectFromAws(client, "IAM", "listAccountAliases");
 };
 
 var joinResponses = function (key) {
@@ -87,12 +87,12 @@ var joinResponses = function (key) {
     };
 };
 
-var listAccessKeys = function (iam, listOfUsers) {
+var listAccessKeys = function (client, listOfUsers) {
     var all = [];
 
     for (var i=0; i<listOfUsers.Users.length; ++i) {
         all.push(
-            Q([ iam, listOfUsers.Users[i].UserName ])
+            Q([ client, listOfUsers.Users[i].UserName ])
                 .spread(listAccessKeysForUser)
                 .then(AwsDataUtils.tidyResponseMetadata)
         );
@@ -101,20 +101,20 @@ var listAccessKeys = function (iam, listOfUsers) {
     return Q.all(all).then(joinResponses("AccessKeyMetadata"));
 };
 
-var listAccessKeysForUser = function (iam, userName) {
-    return AwsDataUtils.collectFromAws(iam, "IAM", "listAccessKeys", { UserName: userName });
+var listAccessKeysForUser = function (client, userName) {
+    return AwsDataUtils.collectFromAws(client, "IAM", "listAccessKeys", { UserName: userName });
 };
 
 var collectAll = function () {
-    var iam = promiseIAM();
+    var client = promiseClient();
 
-    var gcr = iam.then(getCredentialReportCsv).then(AwsDataUtils.saveContentTo("var/service/iam/credential-report.raw"));
+    var gcr = client.then(getCredentialReportCsv).then(AwsDataUtils.saveContentTo("var/service/iam/credential-report.raw"));
     var jcr = gcr.then(parseCsv).then(AwsDataUtils.saveJsonTo("var/service/iam/credential-report.json"));
 
-    var laa = iam.then(listAccountAliases).then(AwsDataUtils.tidyResponseMetadata).then(AwsDataUtils.saveJsonTo("var/service/iam/list-account-aliases.json"));
-    var lu = iam.then(listUsers).then(AwsDataUtils.tidyResponseMetadata).then(AwsDataUtils.saveJsonTo("var/service/iam/list-users.json"));
-    var lr = iam.then(listRoles).then(AwsDataUtils.tidyResponseMetadata).then(AwsDataUtils.saveJsonTo("var/service/iam/list-roles.json"));
-    var lak = Q.all([ iam, lu ]).spread(listAccessKeys).then(AwsDataUtils.saveJsonTo("var/service/iam/list-access-keys.json"));
+    var laa = client.then(listAccountAliases).then(AwsDataUtils.tidyResponseMetadata).then(AwsDataUtils.saveJsonTo("var/service/iam/list-account-aliases.json"));
+    var lu = client.then(listUsers).then(AwsDataUtils.tidyResponseMetadata).then(AwsDataUtils.saveJsonTo("var/service/iam/list-users.json"));
+    var lr = client.then(listRoles).then(AwsDataUtils.tidyResponseMetadata).then(AwsDataUtils.saveJsonTo("var/service/iam/list-roles.json"));
+    var lak = Q.all([ client, lu ]).spread(listAccessKeys).then(AwsDataUtils.saveJsonTo("var/service/iam/list-access-keys.json"));
 
     return Q.all([
         gcr, jcr,

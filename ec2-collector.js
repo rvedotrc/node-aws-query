@@ -3,12 +3,12 @@ var Q = require('q');
 
 var AwsDataUtils = require('./aws-data-utils');
 
-var promiseEC2 = function () {
+var promiseClient = function () {
     return Q(new AWS.EC2({ region: 'eu-west-1' }));
 };
 
-var describeInstances = function (ec2) {
-    return AwsDataUtils.collectFromAws(ec2, "EC2", "describeInstances", {}, "Reservations")
+var describeInstances = function (client) {
+    return AwsDataUtils.collectFromAws(client, "EC2", "describeInstances", {}, "Reservations")
         .then(function (r) {
             r.Reservations.sort(function (a, b) {
                 if (a.ReservationId < b.ReservationId) return -1;
@@ -27,9 +27,9 @@ var describeInstances = function (ec2) {
 };
 
 var collectAll = function () {
-    var ec2 = promiseEC2();
+    var client = promiseClient();
 
-    var di = ec2.then(describeInstances).then(AwsDataUtils.saveJsonTo("var/service/ec2/region/eu-west-1/describe-instances.json"));
+    var di = client.then(describeInstances).then(AwsDataUtils.saveJsonTo("var/service/ec2/region/eu-west-1/describe-instances.json"));
 
     return Q.all([
         di
