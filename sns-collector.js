@@ -38,7 +38,7 @@ var listTopics = function (client) {
 };
 
 var listSubscriptions = function (client) {
-    var paginationHelper = AwsDataUtils.paginationHelper("NextToken", "NextToken", "Topics");
+    var paginationHelper = AwsDataUtils.paginationHelper("NextToken", "NextToken", "Subscriptions");
 
     return AwsDataUtils.collectFromAws(client, "listSubscriptions", {}, paginationHelper)
         .then(AwsDataUtils.tidyResponseMetadata)
