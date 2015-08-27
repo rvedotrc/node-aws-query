@@ -22,9 +22,10 @@ var promiseClient = function (clientConfig, region) {
     return Q(new AWS.CloudWatch(config));
 };
 
-var describeInstances = function (client) {
-    // pagination: NextToken / ?
-    return(AwsDataUtils.collectFromAws(client, "CloudWatch", "describeAlarms", {}, "MetricAlarms")
+var describeAlarms = function (client) {
+    var paginationHelper = AwsDataUtils.paginationHelper("NextToken", "NextToken", "MetricAlarms");
+
+    return(AwsDataUtils.collectFromAws(client, "describeAlarms", {}, paginationHelper)
         .then(AwsDataUtils.tidyResponseMetadata)
         .then(function (r) {
             r.MetricAlarms.sort(function (a, b) {
@@ -45,7 +46,7 @@ var describeInstances = function (client) {
 var collectAllForRegion = function (clientConfig, region) {
     var client = promiseClient(clientConfig, region);
 
-    var alarms = client.then(describeInstances).then(AwsDataUtils.saveJsonTo("var/service/cloudwatch/region/"+region+"/describe-alarms.json"));
+    var alarms = client.then(describeAlarms).then(AwsDataUtils.saveJsonTo("var/service/cloudwatch/region/"+region+"/describe-alarms.json"));
 
     return Q.all([
         alarms

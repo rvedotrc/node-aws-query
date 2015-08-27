@@ -23,8 +23,9 @@ var promiseClient = function (clientConfig, region) {
 };
 
 var listTopics = function (client) {
-    // pagination: NextToken
-    return AwsDataUtils.collectFromAws(client, "SNS", "listTopics", {}, "Topics")
+    var paginationHelper = AwsDataUtils.paginationHelper("NextToken", "NextToken", "Topics");
+
+    return AwsDataUtils.collectFromAws(client, "listTopics", {}, paginationHelper)
         .then(AwsDataUtils.tidyResponseMetadata)
         .then(function (r) {
             r.Topics.sort(function (a, b) {
@@ -37,8 +38,9 @@ var listTopics = function (client) {
 };
 
 var listSubscriptions = function (client) {
-    // pagination: NextToken
-    return AwsDataUtils.collectFromAws(client, "SNS", "listSubscriptions", {}, "Subscriptions")
+    var paginationHelper = AwsDataUtils.paginationHelper("NextToken", "NextToken", "Topics");
+
+    return AwsDataUtils.collectFromAws(client, "listSubscriptions", {}, paginationHelper)
         .then(AwsDataUtils.tidyResponseMetadata)
         .then(function (r) {
             r.Subscriptions.sort(function (a, b) {

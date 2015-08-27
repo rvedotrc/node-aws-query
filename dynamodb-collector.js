@@ -1,7 +1,6 @@
 var AWS = require('aws-sdk');
 var Q = require('q');
 var merge = require('merge');
-var path = require('path');
 
 var AwsDataUtils = require('./aws-data-utils');
 
@@ -23,25 +22,9 @@ var promiseClient = function (clientConfig, region) {
     return Q(new AWS.DynamoDB(config));
 };
 
-var listTables = function (client, lastEvaluatedTableName) {
-    var args = {};
-    if (lastEvaluatedTableName) args.ExclusiveStartTableName = lastEvaluatedTableName;
-
-    // pagination: LastEvaluatedTableName -> ExclusiveStartTableName
-
-    return AwsDataUtils.collectFromAws(client, "DynamoDB", "listTables", args, "TableNames")
-        .then(function (r) {
-            if (!r.LastEvaluatedTableName) {
-                return r;
-            } else {
-                return Q.all([ Q(r), listTables(client, r.LastEvaluatedTableName) ])
-                    .spread(function (r1, r2) {
-                        return {
-                            TableNames: r1.TableNames.concat(r2.TableNames)
-                        };
-                    });
-            }
-        });
+var listTables = function (client) {
+    var paginationHelper = AwsDataUtils.paginationHelper("LastEvaluatedTableName", "ExclusiveStartTableName", "TableNames");
+    return AwsDataUtils.collectFromAws(client, "listTables", {}, paginationHelper);
 };
 
 var collectAllForRegion = function (clientConfig, region) {

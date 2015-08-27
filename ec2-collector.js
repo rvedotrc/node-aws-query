@@ -23,7 +23,9 @@ var promiseClient = function (clientConfig, region) {
 };
 
 var describeInstances = function (client) {
-    return AwsDataUtils.collectFromAws(client, "EC2", "describeInstances", {}, "Reservations")
+    var paginationHelper = AwsDataUtils.paginationHelper("NextToken", "NextToken", "Reservations");
+
+    return AwsDataUtils.collectFromAws(client, "describeInstances", {}, paginationHelper)
         .then(function (r) {
             r.Reservations.sort(function (a, b) {
                 if (a.ReservationId < b.ReservationId) return -1;

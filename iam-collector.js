@@ -9,11 +9,11 @@ var promiseClient = function () {
 };
 
 var generateCredentialReport = function (client) {
-    return AwsDataUtils.collectFromAws(client, "IAM", "generateCredentialReport");
+    return AwsDataUtils.collectFromAws(client, "generateCredentialReport");
 };
 
 var getCredentialReport = function (client) {
-    return AwsDataUtils.collectFromAws(client, "IAM", "getCredentialReport")
+    return AwsDataUtils.collectFromAws(client, "getCredentialReport")
         .fail(function (v) {
             if (v.statusCode === 410) {
                 // generate (not present, or expired)
@@ -54,8 +54,9 @@ var parseCsv = function (csvString) {
 };
 
 var listRoles = function (client) {
-    // pagination: IsTruncated / Marker
-    return AwsDataUtils.collectFromAws(client, "IAM", "listRoles", {}, "Roles")
+    var paginationHelper = AwsDataUtils.paginationHelper("Marker", "Marker", "Roles");
+
+    return AwsDataUtils.collectFromAws(client, "listRoles", {}, paginationHelper)
         .then(function (v) {
             var roles = v.Roles;
             for (var i=0; i<roles.length; ++i) {
@@ -66,13 +67,12 @@ var listRoles = function (client) {
 };
 
 var listUsers = function (client) {
-    // pagination: IsTruncated / Marker
-    return AwsDataUtils.collectFromAws(client, "IAM", "listUsers", {}, "Users");
+    var paginationHelper = AwsDataUtils.paginationHelper("Marker", "Marker", "Users");
+    return AwsDataUtils.collectFromAws(client, "listUsers", {}, paginationHelper);
 };
 
 var listAccountAliases = function (client) {
-    // IsTruncated
-    return AwsDataUtils.collectFromAws(client, "IAM", "listAccountAliases");
+    return AwsDataUtils.collectFromAws(client, "listAccountAliases");
 };
 
 var joinResponses = function (key) {
@@ -105,8 +105,7 @@ var listAccessKeys = function (client, listOfUsers) {
 };
 
 var listAccessKeysForUser = function (client, userName) {
-    // IsTruncated
-    return AwsDataUtils.collectFromAws(client, "IAM", "listAccessKeys", { UserName: userName });
+    return AwsDataUtils.collectFromAws(client, "listAccessKeys", { UserName: userName });
 };
 
 var collectAll = function () {

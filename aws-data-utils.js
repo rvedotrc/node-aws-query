@@ -7,15 +7,34 @@ var Executor = require('./executor');
 
 var executor = new Executor(10);
 
-var doCollectFromAws = function(nextJob, deferred, client, clientName, method, args, listKey, joinTo) {
-    console.log(clientName, method, args);
+var rejectIfContainsPagination = function (deferred, data) {
+    var stringKeys = [];
+    var arrayKeys = [];
+
+    for (var p in data) {
+        if (typeof(data[p]) === 'string') {
+            stringKeys.push(p);
+        } else if (Array.isArray(data[p])) {
+            arrayKeys.push(p);
+        }
+    }
+
+    if (arrayKeys.length === 1 && stringKeys.length === 1) {
+        deferred.reject("Response seems to contain pagination data.  Keys are: " + Object.keys(data).sort().join(","));
+    }
+};
+
+var doCollectFromAws = function(nextJob, deferred, client, method, args, paginationHelper) {
+    if (!args) args = {};
+    console.log("collectFromAws", client.serviceIdentifier, method, args);
+
     var cb = function (err, data) {
         if (err === null) {
             // To collect information on which method calls return what keys,
             // particularly with regards to pagination.  The docs don't seem
             // consistent.
             var apiMeta = {
-                ClientName: clientName,
+                Service: client.serviceIdentifier,
                 Method: method,
                 Region: client.config.region,
                 RequestKeys: Object.keys(args || {}).sort(),
@@ -23,39 +42,22 @@ var doCollectFromAws = function(nextJob, deferred, client, clientName, method, a
             };
             console.log("apiMeta =", JSON.stringify(apiMeta));
 
-            if (joinTo !== undefined) {
-                if (!listKey) return deferred.reject(new Error("joinTo with no listKey"));
-                data[listKey] = joinTo[listKey].concat(data[listKey]);
+            if (paginationHelper) {
+                var nextArgs = paginationHelper.nextArgs(args, data);
+                if (nextArgs) {
+                    var promiseOfNextData = (exports.collectFromAws)(client, method, nextArgs, paginationHelper);
+                    var promiseOfJoinedData = Q.all([ Q(data), promiseOfNextData ])
+                        .spread(paginationHelper.promiseOfJoinedData);
+                    deferred.resolve(promiseOfJoinedData);
+                }
+            } else {
+                rejectIfContainsPagination(deferred, data);
             }
 
-            // Marker / IsTruncated -style pagination
-            if (data.IsTruncated === true) {
-                if (!data.Marker) {
-                    return deferred.reject(new Error("response IsTruncated, but has no Marker"));
-                }
-                args = merge(args, { Marker: data.Marker });
-                console.log("truncated (got", data[listKey].length, "results so far), will query again with Marker", data.Marker);
-                if (!listKey) {
-                    return deferred.reject(new Error("response IsTruncated, but no listKey provided"));
-                }
-                return doCollectFromAws(nextJob, deferred, client, clientName, method, args, listKey, data);
-            }
-
-            // NextMarker -> Marker - Lambda listFunctions
-
-            // NextToken -style pagination
-            if (data.NextToken) {
-                args = merge(args, { NextToken: data.NextToken });
-                console.log("truncated (got", data[listKey].length, "results so far), will query again with NextToken", data.NextToken);
-                if (!listKey) {
-                    return deferred.reject(new Error("response has NextToken, but no listKey provided"));
-                }
-                return doCollectFromAws(nextJob, deferred, client, clientName, method, args, listKey, data);
-            }
-
+            // Resolving a deferred twice (see above) is OK.  First wins.
             deferred.resolve(data);
         } else {
-            console.log(clientName, method, args, "failed with", err);
+            console.log(client.serviceIdentifier, method, args, "failed with", err);
 
             if (err.code === 'Throttling') {
                 var delay = 1000 + Math.random() * 5000;
@@ -69,13 +71,30 @@ var doCollectFromAws = function(nextJob, deferred, client, clientName, method, a
         }
         nextJob();
     };
+
     client[method].apply(client, [args, cb]);
 };
 
-exports.collectFromAws = function (client, clientName, method, args, listKey) {
+exports.collectFromAws = function (client, method, args, paginationHelper) {
     var deferred = Q.defer();
-    executor.submit(doCollectFromAws, deferred, client, clientName, method, args, listKey);
+    executor.submit(doCollectFromAws, deferred, client, method, args, paginationHelper);
     return deferred.promise;
+};
+
+exports.paginationHelper = function (responseTokenField, requestTokenField, responseListField) {
+    return {
+        nextArgs: function (args, data) {
+            if (!data[responseTokenField]) return;
+            var toMerge = {};
+            toMerge[requestTokenField] = data[responseTokenField];
+            return merge(args, toMerge);
+        },
+        promiseOfJoinedData: function (data1, data2) {
+            var toMerge = {};
+            toMerge[responseListField] = data1[responseListField].concat(data2[responseListField]);
+            return merge(data2, toMerge);
+        }
+    };
 };
 
 exports.tidyResponseMetadata = function (data) {

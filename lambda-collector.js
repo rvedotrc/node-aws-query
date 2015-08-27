@@ -19,7 +19,9 @@ var promiseClient = function (clientConfig, region) {
 
 var listFunctions = function (client) {
     // pagination: NextMarker
-    return AwsDataUtils.collectFromAws(client, "Lambda", "listFunctions", {}, "Functions")
+    var paginationHelper = AwsDataUtils.paginationHelper("NextMarker", "Marker", "Functions");
+
+    return AwsDataUtils.collectFromAws(client, "listFunctions", {}, paginationHelper)
         .then(AwsDataUtils.tidyResponseMetadata)
         .then(function (r) {
             r.Functions.sort(function (a, b) {
