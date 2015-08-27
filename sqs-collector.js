@@ -1,12 +1,27 @@
 var AWS = require('aws-sdk');
 var Q = require('q');
+var merge = require('merge');
 var path = require('path');
 
 var AwsDataUtils = require('./aws-data-utils');
 var SqsListAllQueues = require('./sqs-list-all-queues');
 
-var promiseClient = function () {
-    return Q(new AWS.SQS({ region: 'eu-west-1' }));
+// https://docs.aws.amazon.com/general/latest/gr/rande.html#sqs_region
+var regions = [
+    "us-east-1",
+    "us-west-2",
+    "us-west-1",
+    "eu-west-1",
+    "eu-central-1",
+    "ap-southeast-1",
+    "ap-southeast-2",
+    "ap-northeast-1",
+    "sa-east-1"
+];
+
+var promiseClient = function (clientConfig, region) {
+    var config = merge(clientConfig, { region: region });
+    return Q(new AWS.SQS(config));
 };
 
 var listAllQueues = function (client) {
@@ -21,11 +36,11 @@ var queueUrlsToNames = function(r) {
     return s;
 };
 
-var getAllQueueAttributes = function(client, r) {
+var getAllQueueAttributes = function(client, region, r) {
     var promises = [];
     for (var i=0; i < r.QueueUrls.length; ++i) {
         promises.push(
-            Q([ client, r.QueueUrls[i] ]).spread(getQueueAttributes)
+            Q([ client, region, r.QueueUrls[i] ]).spread(getQueueAttributes)
         );
     }
     return Q.all(promises);
@@ -44,7 +59,7 @@ var attributesToCollect = [
     "RedrivePolicy"
 ];
 
-var getQueueAttributes = function(client, url) {
+var getQueueAttributes = function(client, region, url) {
     return AwsDataUtils.collectFromAws(client, "SQS", "getQueueAttributes", {QueueUrl: url, AttributeNames: attributesToCollect})
         .then(function (r) {
             var queueName = path.basename(url);
@@ -52,23 +67,33 @@ var getQueueAttributes = function(client, url) {
             var saveAttrs = Q(r.Attributes)
                 .then(AwsDataUtils.decodeJsonInline("Policy"))
                 .then(AwsDataUtils.decodeJsonInline("RedrivePolicy"))
-                .then(AwsDataUtils.saveJsonTo("var/service/sqs/region/eu-west-1/queue/"+queueName+"/attributes.json"));
+                .then(AwsDataUtils.saveJsonTo("var/service/sqs/region/"+region+"/queue/"+queueName+"/attributes.json"));
             return saveAttrs;
         });
 };
 
-var collectAll = function () {
-    var client = promiseClient();
+var collectAllForRegion = function (clientConfig, region) {
+    var client = promiseClient(clientConfig, region);
 
-    var queueUrls = client.then(listAllQueues).then(AwsDataUtils.saveJsonTo("var/service/sqs/region/eu-west-1/list-all-queues.json"));
-    var queueNames = queueUrls.then(queueUrlsToNames).then(AwsDataUtils.saveContentTo("var/service/sqs/region/eu-west-1/list-all-queues.txt"));
-    var queueAttrs = Q.all([ client, queueUrls ]).spread(getAllQueueAttributes);
+    var queueUrls = client.then(listAllQueues).then(AwsDataUtils.saveJsonTo("var/service/sqs/region/"+region+"/list-all-queues.json"));
+    var queueNames = queueUrls.then(queueUrlsToNames).then(AwsDataUtils.saveContentTo("var/service/sqs/region/"+region+"/list-all-queues.txt"));
+    var queueAttrs = Q.all([ client, region, queueUrls ]).spread(getAllQueueAttributes);
 
     return Q.all([
         queueUrls,
         queueNames,
         queueAttrs
     ]);
+};
+
+var collectAll = function (clientConfig) {
+    var promises = [];
+
+    for (var i=0; i<regions.length; ++i) {
+        promises.push(collectAllForRegion(clientConfig, regions[i]));
+    }
+
+    return Q.all(promises);
 };
 
 module.exports = {
