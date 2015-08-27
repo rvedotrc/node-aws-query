@@ -11,12 +11,14 @@ Q.longStackSupport = true;
 // TODO for parity with ruby code:
 // - delete stale assets (e.g. things that are gone)
 
+var clientConfig = {};
+
 Q.all([
-    CloudWatchCollector.collectAll(),
-    EC2Collector.collectAll(),
-    IAMCollector.collectAll(),
-    S3Collector.collectAll(),
-    SNSCollector.collectAll(),
-    SQSCollector.collectAll(),
+    CloudWatchCollector.collectAll(clientConfig),
+    EC2Collector.collectAll(clientConfig),
+    IAMCollector.collectAll(clientConfig),
+    S3Collector.collectAll(clientConfig),
+    SNSCollector.collectAll(clientConfig),
+    SQSCollector.collectAll(clientConfig),
     Q(true)
 ]).done();

@@ -1,10 +1,25 @@
 var AWS = require('aws-sdk');
 var Q = require('q');
+var merge = require('merge');
 
 var AwsDataUtils = require('./aws-data-utils');
 
-var promiseClient = function () {
-    return Q(new AWS.EC2({ region: 'eu-west-1' }));
+// https://docs.aws.amazon.com/general/latest/gr/rande.html#ec2_region
+var regions = [
+    "us-east-1",
+    "us-west-2",
+    "us-west-1",
+    "eu-west-1",
+    "eu-central-1",
+    "ap-southeast-1",
+    "ap-southeast-2",
+    "ap-northeast-1",
+    "sa-east-1"
+];
+
+var promiseClient = function (clientConfig, region) {
+    var config = merge(clientConfig, { region: region });
+    return Q(new AWS.EC2(config));
 };
 
 var describeInstances = function (client) {
@@ -26,14 +41,24 @@ var describeInstances = function (client) {
         });
 };
 
-var collectAll = function () {
-    var client = promiseClient();
+var collectAllForRegion = function (clientConfig, region) {
+    var client = promiseClient(clientConfig, region);
 
-    var di = client.then(describeInstances).then(AwsDataUtils.saveJsonTo("var/service/ec2/region/eu-west-1/describe-instances.json"));
+    var di = client.then(describeInstances).then(AwsDataUtils.saveJsonTo("var/service/ec2/region/"+region+"/describe-instances.json"));
 
     return Q.all([
         di
     ]);
+};
+
+var collectAll = function (clientConfig) {
+    var promises = [];
+
+    for (var i=0; i<regions.length; ++i) {
+        promises.push(collectAllForRegion(clientConfig, regions[i]));
+    }
+
+    return Q.all(promises);
 };
 
 module.exports = {
