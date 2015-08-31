@@ -127,7 +127,7 @@ describe("AwsDataUtils", function () {
 
         AwsDataUtils.collectFromAws(anAwsClient, "getThings", {})
             .then(function (data) {
-                console.log(data);
+                mock.verify();
                 mochaDone();
             }).done();
     });
@@ -149,6 +149,7 @@ describe("AwsDataUtils", function () {
         AwsDataUtils.collectFromAws(anAwsClient, "getThings", {})
             .fail(function (caught) {
                 assert.deepEqual(thrown, caught);
+                mock.verify();
                 mochaDone();
             }).done();
     });
