@@ -20,7 +20,10 @@ var rejectIfContainsPagination = function (deferred, data) {
     }
 
     if (arrayKeys.length === 1 && stringKeys.length === 1) {
-        deferred.reject("Response seems to contain pagination data.  Keys are: " + Object.keys(data).sort().join(","));
+        deferred.reject(
+            "Response seems to contain pagination data, but no paginationHelper was provided." +
+            " Keys are: " + Object.keys(data).sort().join(",")
+        );
     }
 };
 
@@ -87,7 +90,7 @@ exports.paginationHelper = function (responseTokenField, requestTokenField, resp
             if (!data[responseTokenField]) return;
             var toMerge = {};
             toMerge[requestTokenField] = data[responseTokenField];
-            return merge(args, toMerge);
+            return merge({}, args, toMerge);
         },
         promiseOfJoinedData: function (data1, data2) {
             if (!data1[responseListField] || !data2[responseListField]) {
@@ -97,7 +100,7 @@ exports.paginationHelper = function (responseTokenField, requestTokenField, resp
             }
             var toMerge = {};
             toMerge[responseListField] = data1[responseListField].concat(data2[responseListField]);
-            return merge(data2, toMerge);
+            return merge({}, data2, toMerge);
         }
     };
 };
