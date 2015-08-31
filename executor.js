@@ -61,7 +61,7 @@ Executor.prototype.runNextJob = function () {
     } catch (error) {
         console.log("Job threw an error:", (error.stack ? error.stack : error));
         ++this.errors;
-        this.runNextJob();
+        process.nextTick(this.runMyNextJob);
     }
 };
 
