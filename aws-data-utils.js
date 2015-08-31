@@ -63,7 +63,7 @@ var doCollectFromAws = function(nextJob, deferred, client, method, args, paginat
             console.log(client.serviceIdentifier, method, args, "failed with", err);
 
             if (err.code === 'Throttling') {
-                var delay = 1000 + Math.random() * 5000;
+                var delay = exports.getDelay();
                 console.log("Will try again in", delay, "ms");
                 setTimeout(function () {
                     client[method].apply(client, [args, cb]);
@@ -76,6 +76,11 @@ var doCollectFromAws = function(nextJob, deferred, client, method, args, paginat
     };
 
     client[method].apply(client, [args, cb]);
+};
+
+// How long to wait on Throttling errors.  Used for testing.
+exports.getDelay = function () {
+    return 1000 + Math.random() * 5000;
 };
 
 exports.collectFromAws = function (client, method, args, paginationHelper) {

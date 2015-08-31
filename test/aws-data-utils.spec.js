@@ -6,19 +6,31 @@ var AwsDataUtils = require("../aws-data-utils");
 
 describe("AwsDataUtils", function () {
 
+    var sandbox;
+
+    beforeEach(function () {
+        sandbox = sinon.sandbox.create();
+    });
+
+    afterEach(function () {
+        sandbox.restore();
+    });
+
     it('returns a promise to fetch data from AWS', function (mochaDone) {
+        var expectedData = { Things: [ { "ThingName": "bob", "ThingId": "xxx" } ] };
+
         var anAwsClient = {
             serviceIdentifier: "Thing",
             config: {},
             getThings: function (args, cb) {
-                           args.should.eql({"ThingName": "bob"});
-                           cb(null, { Things: [ { "ThingName": "bob", "ThingId": "xxx" } ] });
-                       }
+                args.should.eql({"ThingName": "bob"});
+                cb(null, expectedData);
+            }
         };
 
         AwsDataUtils.collectFromAws(anAwsClient, "getThings", {"ThingName": "bob"})
-            .then(function (data) {
-                console.log("got data", data);
+            .then(function (actualData) {
+                assert.deepEqual(expectedData, actualData);
                 mochaDone();
             }).done();
     });
@@ -28,13 +40,12 @@ describe("AwsDataUtils", function () {
             serviceIdentifier: "Thing",
             config: {},
             getThings: function (args, cb) {
-                           cb(null, { Things: [ { "ThingName": "bob", "ThingId": "xxx" } ], Marker: "more!" });
-                       }
+                cb(null, { Things: [], Marker: "more!" });
+            }
         };
 
         AwsDataUtils.collectFromAws(anAwsClient, "getThings", {})
             .fail(function (err) {
-                console.log("got err", err);
                 err.should.match(/Response seems to contain pagination data, but no paginationHelper was provided/);
                 mochaDone();
             }).done();
@@ -96,6 +107,48 @@ describe("AwsDataUtils", function () {
         AwsDataUtils.collectFromAws(anAwsClient, "getThings", {}, paginationHelper)
             .then(function (data) {
                 assert.deepEqual([1,2,3,4,5,6,7,8,9], data.Things);
+                mochaDone();
+            }).done();
+    });
+
+    it('tries again on Throttling error', function (mochaDone) {
+        var anAwsClient = {
+            serviceIdentifier: "Thing",
+            config: {},
+            getThings: function () {}
+        };
+
+        var mock = sandbox.mock(anAwsClient);
+        mock.expects("getThings").twice()
+            .onFirstCall().yields({ code: 'Throttling' }, null)
+            .onSecondCall().yields(null, { Things: [] });
+
+        sandbox.mock(AwsDataUtils).expects("getDelay").once().returns(5);
+
+        AwsDataUtils.collectFromAws(anAwsClient, "getThings", {})
+            .then(function (data) {
+                console.log(data);
+                mochaDone();
+            }).done();
+    });
+
+    it('does not try again on non-Throttling error', function (mochaDone) {
+        var thrown = { code: 'Denied' };
+
+        var anAwsClient = {
+            serviceIdentifier: "Thing",
+            config: {},
+            getThings: function () {}
+        };
+
+        var mock = sandbox.mock(anAwsClient);
+        mock.expects("getThings").once().onFirstCall().yields(thrown, null);
+
+        sandbox.mock(AwsDataUtils).expects("getDelay").once().returns(50);
+
+        AwsDataUtils.collectFromAws(anAwsClient, "getThings", {})
+            .fail(function (caught) {
+                assert.deepEqual(thrown, caught);
                 mochaDone();
             }).done();
     });
