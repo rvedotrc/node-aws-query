@@ -3,6 +3,12 @@ var Executor = function (max) {
     this.running = 0;
     this.max = Math.floor(0 + max);
     this.errors = 0;
+
+    var executor = this;
+    this.runMyNextJob = function () {
+        executor.runNextJob();
+    };
+
     if (this.max <= 0 || !Number.isFinite(this.max)) {
         throw new Error("Attempt to create Executor with max < 1");
     }
@@ -25,10 +31,7 @@ Executor.prototype.submit = function (job) {
     this.queue.push(arguments);
     if (this.running < this.max) {
         ++this.running;
-        var executor = this;
-        process.nextTick(function () {
-            executor.runNextJob();
-        });
+        process.nextTick(this.runMyNextJob);
     }
 };
 
@@ -51,9 +54,7 @@ Executor.prototype.runNextJob = function () {
 
     // ... replace it by the nextJob callback
     var executor = this;
-    args[0] = function () {
-        executor.runNextJob();
-    };
+    args[0] = this.runMyNextJob;
 
     try {
         func.apply(null, args);
