@@ -29,21 +29,15 @@ var listAllQueues = function (client) {
 };
 
 var queueUrlsToNames = function(r) {
-    var s = '';
-    for (var i=0; i < r.QueueUrls.length; ++i) {
-        s += path.basename(r.QueueUrls[i]) + "\n";
-    }
-    return s;
+    return r.QueueUrls.map(function (url) { return path.basename(url) + "\n"; }).join("");
 };
 
 var getAllQueueAttributes = function(client, region, r) {
-    var promises = [];
-    for (var i=0; i < r.QueueUrls.length; ++i) {
-        promises.push(
-            Q([ client, region, r.QueueUrls[i] ]).spread(getQueueAttributes)
-        );
-    }
-    return Q.all(promises);
+    return Q.all(
+        r.QueueUrls.map(function (url) {
+            return Q([ client, region, url ]).spread(getQueueAttributes);
+        })
+    );
 };
 
 var attributesToCollect = [
@@ -87,13 +81,7 @@ var collectAllForRegion = function (clientConfig, region) {
 };
 
 var collectAll = function (clientConfig) {
-    var promises = [];
-
-    for (var i=0; i<regions.length; ++i) {
-        promises.push(collectAllForRegion(clientConfig, regions[i]));
-    }
-
-    return Q.all(promises);
+    return Q.all(regions.map(function (r) { return collectAllForRegion(clientConfig, r); }));
 };
 
 module.exports = {

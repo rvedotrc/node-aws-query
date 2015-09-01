@@ -38,13 +38,7 @@ var collectAllForRegion = function (clientConfig, region) {
 };
 
 var collectAll = function (clientConfig) {
-    var promises = [];
-
-    for (var i=0; i<regions.length; ++i) {
-        promises.push(collectAllForRegion(clientConfig, regions[i]));
-    }
-
-    return Q.all(promises);
+    return Q.all(regions.map(function (r) { return collectAllForRegion(clientConfig, r); }));
 };
 
 module.exports = {

@@ -35,14 +35,12 @@ var listBuckets = function (client) {
 };
 
 var collectBucketDetails = function (client, r) {
-    var promises = [];
-    for (var i=0; i < r.Buckets.length; ++i) {
-        promises.push(
-            Q([ client, r.Buckets[i].Name ]).spread(getBucketDetails)
-        );
-    }
     // XXX allow some to fail e.g. due to 403
-    return Q.allSettled(promises);
+    return Q.allSettled(
+        r.Buckets.map(function (b) {
+            return Q([ client, b.Name ]).spread(getBucketDetails);
+        })
+    );
 };
 
 var getBucketData = function (client, loc, bucketName, method, processor, filename) {

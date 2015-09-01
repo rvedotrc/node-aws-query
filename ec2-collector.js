@@ -32,13 +32,13 @@ var describeInstances = function (client) {
                 else if (a.ReservationId > b.ReservationId) return +1;
                 else return 0;
             });
-            for (var i=0; i<r.Reservations.length; ++i) {
-                r.Reservations[i].Instances.sort(function (a, b) {
+            r.Reservations.forEach(function (res) {
+                res.Instances.sort(function (a, b) {
                     if (a.InstanceId < b.InstanceId) return -1;
                     else if (a.InstanceId > b.InstanceId) return +1;
                     else return 0;
                 });
-            }
+            });
             return r;
         });
 };
@@ -54,13 +54,7 @@ var collectAllForRegion = function (clientConfig, region) {
 };
 
 var collectAll = function (clientConfig) {
-    var promises = [];
-
-    for (var i=0; i<regions.length; ++i) {
-        promises.push(collectAllForRegion(clientConfig, regions[i]));
-    }
-
-    return Q.all(promises);
+    return Q.all(regions.map(function (r) { return collectAllForRegion(clientConfig, r); }));
 };
 
 module.exports = {

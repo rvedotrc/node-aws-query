@@ -33,11 +33,11 @@ var describeAlarms = function (client) {
                 else if (a.AlarmArn > b.AlarmArn) return +1;
                 else return 0;
             });
-            for (var i=0; i<r.MetricAlarms.length; ++i) {
-                if (r.MetricAlarms[i].StateReasonData !== undefined) {
-                    r.MetricAlarms[i].StateReasonData = JSON.parse(r.MetricAlarms[i].StateReasonData);
+            r.MetricAlarms.forEach(function (ele) {
+                if (ele.StateReasonData !== undefined) {
+                    ele.StateReasonData = JSON.parse(ele.StateReasonData);
                 }
-            }
+            });
             return r;
         })
     );
@@ -54,13 +54,7 @@ var collectAllForRegion = function (clientConfig, region) {
 };
 
 var collectAll = function (clientConfig) {
-    var promises = [];
-
-    for (var i=0; i<regions.length; ++i) {
-        promises.push(collectAllForRegion(clientConfig, regions[i]));
-    }
-
-    return Q.all(promises);
+    return Q.all(regions.map(function (r) { return collectAllForRegion(clientConfig, r); }));
 };
 
 module.exports = {

@@ -64,23 +64,16 @@ var getGroup = function (client, groupName) {
 };
 
 var getGroups = function (client, listOfGroups) {
-    var all = [];
-
-    for (var i=0; i<listOfGroups.Groups.length; ++i) {
-        all.push(
-            Q([ client, listOfGroups.Groups[i].GroupName ])
-                .spread(getGroup)
-                .then(AwsDataUtils.tidyResponseMetadata)
-        );
-    }
+    var all = listOfGroups.Groups.map(function (g) {
+        return Q([ client, g.GroupName ]).spread(getGroup).then(AwsDataUtils.tidyResponseMetadata);
+    });
 
     return Q.all(all)
         .then(function (groupResponses) {
-            var g = {};
-            for (var i=0; i<groupResponses.length; ++i) {
-                g[ groupResponses[i].Group.GroupName ] = groupResponses[i];
-            }
-            return g;
+            return groupResponses.reduce(function (h, r) {
+                h[r.Group.GroupName] = r;
+                return h;
+            }, {});
         });
 };
 
@@ -89,10 +82,9 @@ var listRoles = function (client) {
 
     return AwsDataUtils.collectFromAws(client, "listRoles", {}, paginationHelper)
         .then(function (v) {
-            var roles = v.Roles;
-            for (var i=0; i<roles.length; ++i) {
-                roles[i].AssumeRolePolicyDocument = JSON.parse(decodeURIComponent(roles[i].AssumeRolePolicyDocument));
-            }
+            v.Roles.forEach(function (ele) {
+                ele.AssumeRolePolicyDocument = JSON.parse(decodeURIComponent(ele.AssumeRolePolicyDocument));
+            });
             return v;
         });
 };
@@ -106,33 +98,16 @@ var listAccountAliases = function (client) {
     return AwsDataUtils.collectFromAws(client, "listAccountAliases");
 };
 
-var joinResponses = function (key) {
-    return function (responses) {
-        var answer = {};
-        answer[key] = [];
-
-        // TODO what if any response contains any key other than 'key'?
-
-        for (var i=0; i<responses.length; ++i) {
-            answer[key] = answer[key].concat(responses[i][key]);
-        }
-
-        return answer;
-    };
-};
-
 var listAccessKeys = function (client, listOfUsers) {
-    var all = [];
-
-    for (var i=0; i<listOfUsers.Users.length; ++i) {
-        all.push(
-            Q([ client, listOfUsers.Users[i].UserName ])
-                .spread(listAccessKeysForUser)
-                .then(AwsDataUtils.tidyResponseMetadata)
-        );
-    }
-
-    return Q.all(all).then(joinResponses("AccessKeyMetadata"));
+    return Q.all(
+        listOfUsers.Users.map(function (u) {
+            return Q([ client, u.UserName ]).spread(listAccessKeysForUser).then(AwsDataUtils.tidyResponseMetadata);
+        })
+    ).then(function (responses) {
+        var allAKM = [];
+        responses.forEach(function (e) { allAKM = allAKM.concat(e.AccessKeyMetadata); });
+        return { AccessKeyMetadata: allAKM };
+    });
 };
 
 var listAccessKeysForUser = function (client, userName) {
@@ -154,9 +129,9 @@ var getInlinePoliciesForThing = function (client, thingName, thingNameKey, listM
             })
         );
     }).then(function (d) {
-        var policies = d.reduce(function (x, y) {
-            x[ y.PolicyName ] = JSON.parse(decodeURIComponent( y.PolicyDocument ));
-            return x;
+        var policies = d.reduce(function (h, p) {
+            h[ p.PolicyName ] = JSON.parse(decodeURIComponent( p.PolicyDocument ));
+            return h;
         }, {});
 
         return { Name: thingName, InlinePolicies: policies };
@@ -170,9 +145,9 @@ var getInlinePoliciesForAllThings = function (client, listOfThings, thingsKey, t
                 .spread(getInlinePoliciesForThing);
         })
     ).then(function (data) {
-        return data.reduce(function (x, y) {
-            x[ y.Name ] = y.InlinePolicies;
-            return x;
+        return data.reduce(function (h, pair) {
+            h[ pair.Name ] = pair.InlinePolicies;
+            return h;
         }, {});
     });
 };
