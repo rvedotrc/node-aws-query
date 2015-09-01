@@ -211,10 +211,15 @@ var collectAll = function () {
     ]);
 
     // var lp = client.then(listPolicies).then(AwsDataUtils.tidyResponseMetadata).then(AwsDataUtils.saveJsonTo("var/service/iam/list-policies.json"));
-    // listPolicies / listPolicyVersions / getPolicy / getPolicyVersions
-    // list-attached-group-policies
-    // list-attached-role-policies
-    // list-attached-user-policiess
+    // listPolicies: a list of policies (includes AttachmentCount, but not
+    // what it's attached to)
+    // getPolicy: one of that list, but with an extra Description field
+    // listPolicyVersions: list available versions for a policy (e.g. "v1")
+    // getPolicyVersion: for the actual policy document
+
+    // list-attached-group-policies (for a single group)
+    // list-attached-role-policies (for a single role)
+    // list-attached-user-policiess (for a single user)
 
     return Q.all([
         gcr, jcr,
