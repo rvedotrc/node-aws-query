@@ -149,8 +149,8 @@ var getInlinePoliciesForThing = function (client, thingName, thingNameKey, listM
         return Q.all(
             d.PolicyNames.map(function (policyName) {
                 return Q(true).then(function () {
-                    return AwsDataUtils.collectFromAws(client, getMethod, merge({}, nameArgs, {PolicyName: policyName}))
-                })
+                    return AwsDataUtils.collectFromAws(client, getMethod, merge({}, nameArgs, {PolicyName: policyName}));
+                });
             })
         );
     }).then(function (d) {
@@ -167,7 +167,7 @@ var getInlinePoliciesForAllThings = function (client, listOfThings, thingsKey, t
     return Q.all(
         listOfThings[thingsKey].map(function (thing) {
             return Q.all([ client, thing[thingNameKey], Q(thingNameKey), Q(listMethod), Q(getMethod) ])
-                .spread(getInlinePoliciesForThing)
+                .spread(getInlinePoliciesForThing);
         })
     ).then(function (data) {
         return data.reduce(function (x, y) {
