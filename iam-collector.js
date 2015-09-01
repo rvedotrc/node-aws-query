@@ -1,6 +1,7 @@
 var AWS = require('aws-sdk');
 var Q = require('q');
 var csv = require("fast-csv");
+var merge = require("merge");
 
 var AwsDataUtils = require('./aws-data-utils');
 
@@ -138,6 +139,56 @@ var listAccessKeysForUser = function (client, userName) {
     return AwsDataUtils.collectFromAws(client, "listAccessKeys", { UserName: userName });
 };
 
+var getInlinePoliciesForThing = function (client, thingName, thingNameKey, listMethod, getMethod) {
+    var nameArgs = {};
+    nameArgs[thingNameKey] = thingName;
+
+    return AwsDataUtils.collectFromAws(
+        client, listMethod, nameArgs, AwsDataUtils.paginationHelper("Marker", "Marker", "PolicyNames")
+    ).then(function (d) {
+        return Q.all(
+            d.PolicyNames.map(function (policyName) {
+                return Q(true).then(function () {
+                    return AwsDataUtils.collectFromAws(client, getMethod, merge({}, nameArgs, {PolicyName: policyName}))
+                })
+            })
+        );
+    }).then(function (d) {
+        var policies = d.reduce(function (x, y) {
+            x[ y.PolicyName ] = JSON.parse(decodeURIComponent( y.PolicyDocument ));
+            return x;
+        }, {});
+
+        return { Name: thingName, InlinePolicies: policies };
+    });
+};
+
+var getInlinePoliciesForAllThings = function (client, listOfThings, thingsKey, thingNameKey, listMethod, getMethod) {
+    return Q.all(
+        listOfThings[thingsKey].map(function (thing) {
+            return Q.all([ client, thing[thingNameKey], Q(thingNameKey), Q(listMethod), Q(getMethod) ])
+                .spread(getInlinePoliciesForThing)
+        })
+    ).then(function (data) {
+        return data.reduce(function (x, y) {
+            x[ y.Name ] = y.InlinePolicies;
+            return x;
+        }, {});
+    });
+};
+
+var getInlinePoliciesForAllUsers = function (client, listOfUsers) {
+    return getInlinePoliciesForAllThings(client, listOfUsers, "Users", "UserName", "listUserPolicies", "getUserPolicy");
+};
+
+var getInlinePoliciesForAllGroups = function (client, listOfGroups) {
+    return getInlinePoliciesForAllThings(client, listOfGroups, "Groups", "GroupName", "listGroupPolicies", "getGroupPolicy");
+};
+
+var getInlinePoliciesForAllRoles = function (client, listOfRoles) {
+    return getInlinePoliciesForAllThings(client, listOfRoles, "Roles", "RoleName", "listRolePolicies", "getRolePolicy");
+};
+
 var collectAll = function () {
     var client = promiseClient();
 
@@ -152,8 +203,12 @@ var collectAll = function () {
     var lg = client.then(listGroups);
     var gg = Q.all([ client, lg ]).spread(getGroups).then(AwsDataUtils.saveJsonTo("var/service/iam/get-groups.json"));
 
-    // list (user|role|group) policies
-    // get (user|role|group) policy
+    var getInlinePolicies = Q.all([
+        Q.all([ client, lu ]).spread(getInlinePoliciesForAllUsers).then(AwsDataUtils.saveJsonTo("var/service/iam/inline-user-policies.json")),
+        Q.all([ client, lr ]).spread(getInlinePoliciesForAllRoles).then(AwsDataUtils.saveJsonTo("var/service/iam/inline-role-policies.json")),
+        Q.all([ client, lg ]).spread(getInlinePoliciesForAllGroups).then(AwsDataUtils.saveJsonTo("var/service/iam/inline-group-policies.json")),
+        Q(true)
+    ]);
 
     // var lp = client.then(listPolicies).then(AwsDataUtils.tidyResponseMetadata).then(AwsDataUtils.saveJsonTo("var/service/iam/list-policies.json"));
     // listPolicies / listPolicyVersions / getPolicy / getPolicyVersions
@@ -167,7 +222,9 @@ var collectAll = function () {
         gg,
         lu,
         lr,
-        lak
+        lak,
+        getInlinePolicies,
+        Q(true)
     ]);
 };
 
