@@ -53,6 +53,36 @@ var parseCsv = function (csvString) {
     return d.promise;
 };
 
+var listGroups = function (client) {
+    var paginationHelper = AwsDataUtils.paginationHelper("Marker", "Marker", "Groups");
+    return AwsDataUtils.collectFromAws(client, "listGroups", {}, paginationHelper);
+};
+
+var getGroup = function (client, groupName) {
+    return AwsDataUtils.collectFromAws(client, "getGroup", {GroupName: groupName});
+};
+
+var getGroups = function (client, listOfGroups) {
+    var all = [];
+
+    for (var i=0; i<listOfGroups.Groups.length; ++i) {
+        all.push(
+            Q([ client, listOfGroups.Groups[i].GroupName ])
+                .spread(getGroup)
+                .then(AwsDataUtils.tidyResponseMetadata)
+        );
+    }
+
+    return Q.all(all)
+        .then(function (groupResponses) {
+            var g = {};
+            for (var i=0; i<groupResponses.length; ++i) {
+                g[ groupResponses[i].Group.GroupName ] = groupResponses[i];
+            }
+            return g;
+        });
+};
+
 var listRoles = function (client) {
     var paginationHelper = AwsDataUtils.paginationHelper("Marker", "Marker", "Roles");
 
@@ -119,9 +149,22 @@ var collectAll = function () {
     var lr = client.then(listRoles).then(AwsDataUtils.tidyResponseMetadata).then(AwsDataUtils.saveJsonTo("var/service/iam/list-roles.json"));
     var lak = Q.all([ client, lu ]).spread(listAccessKeys).then(AwsDataUtils.saveJsonTo("var/service/iam/list-access-keys.json"));
 
+    var lg = client.then(listGroups);
+    var gg = Q.all([ client, lg ]).spread(getGroups).then(AwsDataUtils.saveJsonTo("var/service/iam/get-groups.json"));
+
+    // list (user|role|group) policies
+    // get (user|role|group) policy
+
+    // var lp = client.then(listPolicies).then(AwsDataUtils.tidyResponseMetadata).then(AwsDataUtils.saveJsonTo("var/service/iam/list-policies.json"));
+    // listPolicies / listPolicyVersions / getPolicy / getPolicyVersions
+    // list-attached-group-policies
+    // list-attached-role-policies
+    // list-attached-user-policiess
+
     return Q.all([
         gcr, jcr,
         laa,
+        gg,
         lu,
         lr,
         lak
