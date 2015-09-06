@@ -44,7 +44,7 @@ var collectBucketDetails = function (client, r) {
 };
 
 var getBucketData = function (client, loc, bucketName, method, processor, filename) {
-    if (loc === null) {
+    if (loc === null || loc === "") {
         loc = "standard";
     } else if (loc === "EU") {
         loc = "eu-west-1";
