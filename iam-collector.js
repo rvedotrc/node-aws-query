@@ -132,7 +132,7 @@ var collectAll = function () {
 
     var gaad = Q.all([ client ]).spread(getAccountAuthorizationDetails)
         .then(decodePoliciesForAuthDetails)
-        .then(AwsDataUtils.saveJsonTo("var/service/iam/getAccountAuthorizationDetails.json"));
+        .then(AwsDataUtils.saveJsonTo("var/service/iam/account-authorization-details.json"));
 
     var gcr = client.then(getCredentialReportCsv).then(AwsDataUtils.saveContentTo("var/service/iam/credential-report.raw"));
     var jcr = gcr.then(parseCsv).then(AwsDataUtils.saveJsonTo("var/service/iam/credential-report.json"));
