@@ -100,14 +100,16 @@ var decodePoliciesForAuthDetails = function (l) {
     });
 
     l.RoleDetailList.forEach(function (r) {
-        r.AssumeRolePolicyDocument = JSON.parse(decodeURIComponent(r.AssumeRolePolicyDocument))
+        r.AssumeRolePolicyDocument = JSON.parse(decodeURIComponent(r.AssumeRolePolicyDocument));
+
         r.RolePolicyList.forEach(function (p) {
             p.PolicyDocument = JSON.parse(decodeURIComponent(p.PolicyDocument));
         });
+
         r.InstanceProfileList.forEach(function (ip) {
             // role returned within itself
             ip.Roles.forEach(function (innerRole) {
-                innerRole.AssumeRolePolicyDocument = JSON.parse(decodeURIComponent(innerRole.AssumeRolePolicyDocument))
+                innerRole.AssumeRolePolicyDocument = JSON.parse(decodeURIComponent(innerRole.AssumeRolePolicyDocument));
             });
         });
     });
