@@ -54,19 +54,14 @@ var parseCsv = function (csvString) {
     return d.promise;
 };
 
-var listUsers = function (client) {
-    var paginationHelper = AwsDataUtils.paginationHelper("Marker", "Marker", "Users");
-    return AwsDataUtils.collectFromAws(client, "listUsers", {}, paginationHelper);
-};
-
 var listAccountAliases = function (client) {
     return AwsDataUtils.collectFromAws(client, "listAccountAliases");
 };
 
-var listAccessKeys = function (client, listOfUsers) {
+var listAccessKeys = function (client, listOfUserNames) {
     return Q.all(
-        listOfUsers.Users.map(function (u) {
-            return Q([ client, u.UserName ]).spread(listAccessKeysForUser).then(AwsDataUtils.tidyResponseMetadata);
+        listOfUserNames.map(function (u) {
+            return Q([ client, u ]).spread(listAccessKeysForUser).then(AwsDataUtils.tidyResponseMetadata);
         })
     ).then(function (responses) {
         var allAKM = [];
@@ -144,8 +139,10 @@ var collectAll = function () {
 
     var laa = client.then(listAccountAliases).then(AwsDataUtils.tidyResponseMetadata).then(AwsDataUtils.saveJsonTo("var/service/iam/list-account-aliases.json"));
 
-    var lu = client.then(listUsers);
-    var lak = Q.all([ client, lu ]).spread(listAccessKeys).then(AwsDataUtils.saveJsonTo("var/service/iam/list-access-keys.json"));
+    var listOfUserNames = Q(gaad).then(function (l) {
+        return l.UserDetailList.map(function (u) { return u.UserName; });
+    });
+    var lak = Q.all([ client, listOfUserNames ]).spread(listAccessKeys).then(AwsDataUtils.saveJsonTo("var/service/iam/list-access-keys.json"));
 
     return Q.all([
         gaad,
