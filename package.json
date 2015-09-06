@@ -23,6 +23,7 @@
     "canonical-json": "^0.0.4",
     "executor2": "^0.0",
     "fast-csv": "^0.6",
+    "https-proxy-agent": "^0.3.5",
     "merge": "^1.2",
     "mkdirp": "^0.5.1",
     "node-uuid": "^1.4.3",
