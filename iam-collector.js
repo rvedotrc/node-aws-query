@@ -54,41 +54,6 @@ var parseCsv = function (csvString) {
     return d.promise;
 };
 
-var listGroups = function (client) {
-    var paginationHelper = AwsDataUtils.paginationHelper("Marker", "Marker", "Groups");
-    return AwsDataUtils.collectFromAws(client, "listGroups", {}, paginationHelper);
-};
-
-var getGroup = function (client, groupName) {
-    return AwsDataUtils.collectFromAws(client, "getGroup", {GroupName: groupName});
-};
-
-var getGroups = function (client, listOfGroups) {
-    var all = listOfGroups.Groups.map(function (g) {
-        return Q([ client, g.GroupName ]).spread(getGroup).then(AwsDataUtils.tidyResponseMetadata);
-    });
-
-    return Q.all(all)
-        .then(function (groupResponses) {
-            return groupResponses.reduce(function (h, r) {
-                h[r.Group.GroupName] = r;
-                return h;
-            }, {});
-        });
-};
-
-var listRoles = function (client) {
-    var paginationHelper = AwsDataUtils.paginationHelper("Marker", "Marker", "Roles");
-
-    return AwsDataUtils.collectFromAws(client, "listRoles", {}, paginationHelper)
-        .then(function (v) {
-            v.Roles.forEach(function (ele) {
-                ele.AssumeRolePolicyDocument = JSON.parse(decodeURIComponent(ele.AssumeRolePolicyDocument));
-            });
-            return v;
-        });
-};
-
 var listUsers = function (client) {
     var paginationHelper = AwsDataUtils.paginationHelper("Marker", "Marker", "Users");
     return AwsDataUtils.collectFromAws(client, "listUsers", {}, paginationHelper);
@@ -114,203 +79,79 @@ var listAccessKeysForUser = function (client, userName) {
     return AwsDataUtils.collectFromAws(client, "listAccessKeys", { UserName: userName });
 };
 
-var getInlinePoliciesForThing = function (client, thingName, thingNameKey, listMethod, getMethod) {
-    var nameArgs = {};
-    nameArgs[thingNameKey] = thingName;
-
-    return AwsDataUtils.collectFromAws(
-        client, listMethod, nameArgs, AwsDataUtils.paginationHelper("Marker", "Marker", "PolicyNames")
-    ).then(function (d) {
-        return Q.all(
-            d.PolicyNames.map(function (policyName) {
-                return Q(true).then(function () {
-                    return AwsDataUtils.collectFromAws(client, getMethod, merge({}, nameArgs, {PolicyName: policyName}));
-                });
-            })
-        );
-    }).then(function (d) {
-        var policies = d.reduce(function (h, p) {
-            h[ p.PolicyName ] = JSON.parse(decodeURIComponent( p.PolicyDocument ));
-            return h;
-        }, {});
-
-        return { Name: thingName, InlinePolicies: policies };
-    });
-};
-
-var getInlinePoliciesForAllThings = function (client, listOfThings, thingsKey, thingNameKey, listMethod, getMethod) {
-    return Q.all(
-        listOfThings[thingsKey].map(function (thing) {
-            return Q.all([ client, thing[thingNameKey], Q(thingNameKey), Q(listMethod), Q(getMethod) ])
-                .spread(getInlinePoliciesForThing);
-        })
-    ).then(function (data) {
-        return data.reduce(function (h, pair) {
-            h[ pair.Name ] = pair.InlinePolicies;
-            return h;
-        }, {});
-    });
-};
-
-var getInlinePoliciesForAllUsers = function (client, listOfUsers) {
-    return getInlinePoliciesForAllThings(client, listOfUsers, "Users", "UserName", "listUserPolicies", "getUserPolicy");
-};
-
-var getInlinePoliciesForAllGroups = function (client, listOfGroups) {
-    return getInlinePoliciesForAllThings(client, listOfGroups, "Groups", "GroupName", "listGroupPolicies", "getGroupPolicy");
-};
-
-var getInlinePoliciesForAllRoles = function (client, listOfRoles) {
-    return getInlinePoliciesForAllThings(client, listOfRoles, "Roles", "RoleName", "listRolePolicies", "getRolePolicy");
-};
-
-var listPolicies = function (client) {
-    var paginationHelper = AwsDataUtils.paginationHelper("Marker", "Marker", "Policies");
-    return AwsDataUtils.collectFromAws(client, "listPolicies", {}, paginationHelper);
-};
-
-var filterInterestingPolicies = function (listOfPolicies) {
-    return {
-        Policies: listOfPolicies.Policies.filter(function (p) {
-            return p.AttachmentCount > 0 || !p.Arn.match(/^arn:aws:iam::aws:policy\//);
-        })
+var getAccountAuthorizationDetails = function (client) {
+    var paginationHelper = {
+        nextArgs: function (args, data) {
+            if (!data.Marker) return;
+            return merge(true, args, {Marker: data.Marker});
+        },
+        promiseOfJoinedData: function (data1, data2) {
+            return {
+                UserDetailList: data1.UserDetailList.concat(data2.UserDetailList),
+                GroupDetailList: data1.GroupDetailList.concat(data2.GroupDetailList),
+                RoleDetailList: data1.RoleDetailList.concat(data2.RoleDetailList),
+                Policies: data1.Policies.concat(data2.Policies)
+            };
+        }
     };
+    return AwsDataUtils.collectFromAws(client, "getAccountAuthorizationDetails", {}, paginationHelper);
 };
 
-var getPolicies = function (client, listOfPolicies) {
-    return Q.all(
-        listOfPolicies.Policies.map(function (p) {
-            return AwsDataUtils.collectFromAws(client, "getPolicy", {PolicyArn: p.Arn})
-                .then(function (r) { return r.Policy; });
-        })
-    ).then(function (l) {
-        return { Policies: l };
+var decodePoliciesForAuthDetails = function (l) {
+    l.GroupDetailList.forEach(function (g) {
+        g.GroupPolicyList.forEach(function (p) {
+            p.PolicyDocument = JSON.parse(decodeURIComponent(p.PolicyDocument));
+        });
     });
-};
 
-var addVersionsToPolicies = function (client, listOfPolicies) {
-    var paginationHelper = AwsDataUtils.paginationHelper("Marker", "Marker", "Versions");
-    return Q.all(
-        listOfPolicies.Policies.map(function (p) {
-            return AwsDataUtils.collectFromAws(client, "listPolicyVersions", {PolicyArn: p.Arn}, paginationHelper)
-                .then(function (r) {
-                    return Q.all(
-                        r.Versions.map(function (v) {
-                            return AwsDataUtils.collectFromAws(client, "getPolicyVersion", {PolicyArn: p.Arn, VersionId: v.VersionId})
-                                .then(AwsDataUtils.tidyResponseMetadata)
-                                .then(function (vr) {
-                                    vr.PolicyVersion.Document = JSON.parse(decodeURIComponent(vr.PolicyVersion.Document));
-                                    return vr;
-                                });
-                        })
-                    ).then(function (versions) {
-                        var versionsMap = versions.reduce(function (h, e) {
-                            h[e.PolicyVersion.VersionId] = e.PolicyVersion;
-                            return h;
-                        }, {});
-                        return { Policy: p, Versions: versionsMap };
-                    });
-                });
-        })
-    ).then(function (l) {
-        return l.reduce(function (h, policyAndVersions) {
-            h[policyAndVersions.Policy.Arn] = policyAndVersions.Versions;
-            return h;
-        }, {});
+    l.RoleDetailList.forEach(function (r) {
+        r.AssumeRolePolicyDocument = JSON.parse(decodeURIComponent(r.AssumeRolePolicyDocument))
+        r.RolePolicyList.forEach(function (p) {
+            p.PolicyDocument = JSON.parse(decodeURIComponent(p.PolicyDocument));
+        });
+        r.InstanceProfileList.forEach(function (ip) {
+            // role returned within itself
+            ip.Roles.forEach(function (innerRole) {
+                innerRole.AssumeRolePolicyDocument = JSON.parse(decodeURIComponent(innerRole.AssumeRolePolicyDocument))
+            });
+        });
     });
-};
 
-var findAttachedUserPolicies = function (client, listOfUsers) {
-    var names = listOfUsers.Users.map(function (u) { return u.UserName; });
-    var argMaker = function (n) { return { UserName: n }; };
-    return findAttachedThingPolicies(client, names, "listAttachedUserPolicies", argMaker);
-};
-
-var findAttachedRolePolicies = function (client, listOfRoles) {
-    var names = listOfRoles.Roles.map(function (u) { return u.RoleName; });
-    var argMaker = function (n) { return { RoleName: n }; };
-    return findAttachedThingPolicies(client, names, "listAttachedRolePolicies", argMaker);
-};
-
-var findAttachedGroupPolicies = function (client, listOfGroups) {
-    var names = listOfGroups.Groups.map(function (u) { return u.GroupName; });
-    var argMaker = function (n) { return { GroupName: n }; };
-    return findAttachedThingPolicies(client, names, "listAttachedGroupPolicies", argMaker);
-};
-
-var findAttachedThingPolicies = function (client, listOfNames, listMethod, argMaker) {
-    var paginationHelper = AwsDataUtils.paginationHelper("Marker", "Marker", "AttachedPolicies");
-    return Q.all(
-        listOfNames.map(function (n) {
-            return AwsDataUtils.collectFromAws(client, listMethod, argMaker(n), paginationHelper)
-                .then(function (r) {
-                    return {
-                        ThingName: n,
-                        PolicyArns: r.AttachedPolicies.map(function (ap) { return ap.PolicyArn; })
-                    };
-                });
-        })
-    ).then(function(l) {
-        return l.reduce(function (h, thingAndPolicyArns) {
-            if (thingAndPolicyArns.PolicyArns.length != 0) {
-                h[thingAndPolicyArns.ThingName] = thingAndPolicyArns.PolicyArns;
-            }
-            return h;
-        }, {});
+    l.UserDetailList.forEach(function (u) {
+        u.UserPolicyList.forEach(function (p) {
+            p.PolicyDocument = JSON.parse(decodeURIComponent(p.PolicyDocument));
+        });
     });
+
+    l.Policies.forEach(function (p) {
+        p.PolicyVersionList.forEach(function (pv) {
+            pv.Document = JSON.parse(decodeURIComponent(pv.Document));
+        });
+    });
+
+    return l;
 };
 
 var collectAll = function () {
     var client = promiseClient();
 
+    var gaad = Q.all([ client ]).spread(getAccountAuthorizationDetails)
+        .then(decodePoliciesForAuthDetails)
+        .then(AwsDataUtils.saveJsonTo("var/service/iam/getAccountAuthorizationDetails.json"));
+
     var gcr = client.then(getCredentialReportCsv).then(AwsDataUtils.saveContentTo("var/service/iam/credential-report.raw"));
     var jcr = gcr.then(parseCsv).then(AwsDataUtils.saveJsonTo("var/service/iam/credential-report.json"));
 
     var laa = client.then(listAccountAliases).then(AwsDataUtils.tidyResponseMetadata).then(AwsDataUtils.saveJsonTo("var/service/iam/list-account-aliases.json"));
-    var lu = client.then(listUsers).then(AwsDataUtils.tidyResponseMetadata).then(AwsDataUtils.saveJsonTo("var/service/iam/list-users.json"));
-    var lr = client.then(listRoles).then(AwsDataUtils.tidyResponseMetadata).then(AwsDataUtils.saveJsonTo("var/service/iam/list-roles.json"));
+
+    var lu = client.then(listUsers);
     var lak = Q.all([ client, lu ]).spread(listAccessKeys).then(AwsDataUtils.saveJsonTo("var/service/iam/list-access-keys.json"));
 
-    var lg = client.then(listGroups);
-    var gg = Q.all([ client, lg ]).spread(getGroups).then(AwsDataUtils.saveJsonTo("var/service/iam/get-groups.json"));
-
-    var getInlinePolicies = Q.all([
-        Q.all([ client, lu ]).spread(getInlinePoliciesForAllUsers).then(AwsDataUtils.saveJsonTo("var/service/iam/inline-user-policies.json")),
-        Q.all([ client, lr ]).spread(getInlinePoliciesForAllRoles).then(AwsDataUtils.saveJsonTo("var/service/iam/inline-role-policies.json")),
-        Q.all([ client, lg ]).spread(getInlinePoliciesForAllGroups).then(AwsDataUtils.saveJsonTo("var/service/iam/inline-group-policies.json")),
-        Q(true)
-    ]);
-
-    // Note: we discarded any unattached AWS-provided policies, and we add in
-    // the Description where available
-    var lp = client.then(listPolicies).then(AwsDataUtils.tidyResponseMetadata).then(filterInterestingPolicies);
-    var lp2 = Q.all([ client, lp ]).spread(getPolicies).then(AwsDataUtils.saveJsonTo("var/service/iam/list-policies.json"));
-    var policiesWithVersions = Q.all([ client, lp2 ]).spread(addVersionsToPolicies)
-        .then(AwsDataUtils.saveJsonTo("var/service/iam/policy-versions.json"));
-
-    var findPolicyAttachments = Q.all([
-        Q.all([ client, lu ]).spread(findAttachedUserPolicies),
-        Q.all([ client, lr ]).spread(findAttachedRolePolicies),
-        Q.all([ client, lg ]).spread(findAttachedGroupPolicies),
-        Q(true)
-    ]).spread(function (u, r, g) {
-        return {
-            ByUser: u,
-            ByRole: r,
-            ByGroup: g
-        };
-    }).then(AwsDataUtils.saveJsonTo("var/service/iam/policies-attachments.json"));
-
     return Q.all([
+        gaad,
         gcr, jcr,
         laa,
-        gg,
-        lu,
-        lr,
         lak,
-        getInlinePolicies,
-        policiesWithVersions,
-        findPolicyAttachments,
         Q(true)
     ]);
 };
