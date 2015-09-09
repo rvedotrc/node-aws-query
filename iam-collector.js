@@ -16,12 +16,12 @@ var generateCredentialReport = function (client) {
 var getCredentialReport = function (client) {
     return AwsDataUtils.collectFromAws(client, "getCredentialReport")
         .fail(function (v) {
-            if (v.statusCode === 410) {
+            if (v.statusCode === 410) { // v.code == "ReportNotPresent"
                 // generate (not present, or expired)
                 return Q(client).then(generateCredentialReport).delay(2000).thenResolve(client).then(getCredentialReport);
-            } else if (v.statusCode === 404) {
+            } else if (v.statusCode === 404) { // v.code == "ReportInProgress"
                 // not ready (generation in progress)
-                return Q(client).delay(2000).then(getCredentialReport);
+                return Q(client).delay(v.retryDelay * 1000).then(getCredentialReport);
             } else {
                 // other error
                 return Q.reject(v);
