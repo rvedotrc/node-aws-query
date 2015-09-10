@@ -34,7 +34,8 @@ Querying currently includes:
 
  * CloudWatch: describeAlarms
  * DynamoDB: listTables
- * EC2: describeInstances
+ * EC2: describeInstances, describeAddresses, describeAvailabilityZones,
+   describeAccountAttributes
  * IAM: getAccountAuthorizationDetails, getCredentialReport,
    listAccountAliases, listAccessKeys
  * Lambda: listFunctions

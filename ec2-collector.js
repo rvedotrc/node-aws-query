@@ -43,13 +43,59 @@ var describeInstances = function (client) {
         });
 };
 
+var describeAddresses = function (client) {
+    return AwsDataUtils.collectFromAws(client, "describeAddresses")
+        .then(function (r) {
+            r.Addresses.sort(function (a, b) {
+                if (a.PublicIp < b.PublicIp) return -1;
+                else if (a.PublicIp > b.PublicIp) return +1;
+                else return 0;
+            });
+            return r;
+        });
+};
+
+var describeAccountAttributes = function (client) {
+    return AwsDataUtils.collectFromAws(client, "describeAccountAttributes")
+        .then(function (r) {
+            // Tempting to turn { AttributeName, AttributeValue } into an actual map
+            r.AccountAttributes.sort(function (a, b) {
+                if (a.AttributeName < b.AttributeName) return -1;
+                else if (a.AttributeName > b.AttributeName) return +1;
+                else return 0;
+            });
+            return r;
+        });
+};
+
+var describeAvailabilityZones = function (client) {
+    return AwsDataUtils.collectFromAws(client, "describeAvailabilityZones")
+        .then(function (r) {
+            // Tempting to turn { AttributeName, AttributeValue } into an actual map
+            r.AvailabilityZones.sort(function (a, b) {
+                if (a.ZoneName < b.ZoneName) return -1;
+                else if (a.ZoneName > b.ZoneName) return +1;
+                else return 0;
+            });
+            return r;
+        });
+};
+
 var collectAllForRegion = function (clientConfig, region) {
     var client = promiseClient(clientConfig, region);
 
     var di = client.then(describeInstances).then(AwsDataUtils.saveJsonTo("var/service/ec2/region/"+region+"/describe-instances.json"));
+    var da = client.then(describeAddresses).then(AwsDataUtils.saveJsonTo("var/service/ec2/region/"+region+"/describe-addresses.json"));
+    var daa = client.then(describeAccountAttributes).then(AwsDataUtils.saveJsonTo("var/service/ec2/region/"+region+"/describe-account-attributes.json"));
+    var daz = client.then(describeAvailabilityZones).then(AwsDataUtils.saveJsonTo("var/service/ec2/region/"+region+"/describe-availability-zones.json"));
+    // many, many more things that can be added...
 
     return Q.all([
-        di
+        di,
+        da,
+        daa,
+        daz,
+        Q(true)
     ]);
 };
 
