@@ -39,6 +39,8 @@ Querying currently includes:
  * IAM: getAccountAuthorizationDetails, getCredentialReport,
    listAccountAliases, listAccessKeys
  * Lambda: listFunctions
+ * RDS: describeDBInstances
+ * Route53: listHostedZones
  * S3: listBuckets, and for each bucket: getBucketAcl, getBucketLifecycle,
    getBucketLogging, getBucketPolicy, getBucketTagging
  * SNS: listTopics, listSubscriptions

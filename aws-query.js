@@ -6,6 +6,8 @@ var DynamoDB = require('./dynamodb-collector');
 var EC2Collector = require('./ec2-collector');
 var IAMCollector = require('./iam-collector');
 var LambdaCollector = require('./lambda-collector');
+var RDSCollector = require('./rds-collector');
+var Route53Collector = require('./route53-collector');
 var S3Collector = require('./s3-collector');
 var SNSCollector = require('./sns-collector');
 var SQSCollector = require('./sqs-collector');
@@ -50,6 +52,8 @@ Q.all([
     EC2Collector.collectAll(clientConfig),
     IAMCollector.collectAll(clientConfig),
     LambdaCollector.collectAll(clientConfig),
+    RDSCollector.collectAll(clientConfig),
+    Route53Collector.collectAll(clientConfig),
     S3Collector.collectAll(clientConfig),
     SNSCollector.collectAll(clientConfig),
     SQSCollector.collectAll(clientConfig),
