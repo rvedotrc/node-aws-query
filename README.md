@@ -61,6 +61,12 @@ with pagination followed, sorting applied, and response metadata removed.
 Other data is rather less so - some files may be the result of several
 different API calls stitched together.
 
+The set of files dumped can vary - e.g. the "per bucket" and "per queue"
+files.  Currently, `aws-query` does _not_ delete "old" files.  Hence, unless
+`./var` starts off empty, you might end up with a mixture of files from this
+run, and from some previous run.  Therefore you might want to `rm -rf var/*`
+before running `aws-query`.
+
 Miscellany
 ----------
 

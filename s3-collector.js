@@ -62,7 +62,7 @@ var getBucketData = function (client, loc, bucketName, method, processor, filena
     return p.then(AwsDataUtils.saveJsonTo(asset))
         .fail(function (e) {
             if (e.statusCode === 404) {
-                return AwsDataUtils.deleteAsset(asset);
+                return;
             } else {
                 throw e;
             }
