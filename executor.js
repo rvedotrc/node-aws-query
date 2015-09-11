@@ -53,7 +53,6 @@ Executor.prototype.runNextJob = function () {
     var func = args[0];
 
     // ... replace it by the nextJob callback
-    var executor = this;
     args[0] = this.runMyNextJob;
 
     try {
