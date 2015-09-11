@@ -2,6 +2,7 @@ var AWS = require('aws-sdk');
 var Q = require('q');
 var merge = require('merge');
 
+var AtomicFile = require('./atomic-file');
 var AwsDataUtils = require('./aws-data-utils');
 
 // https://docs.aws.amazon.com/general/latest/gr/rande.html#lambda_region
@@ -36,7 +37,7 @@ var listFunctions = function (client) {
 var collectAllForRegion = function (clientConfig, region) {
     var client = promiseClient(clientConfig, region);
 
-    var functions = client.then(listFunctions).then(AwsDataUtils.saveJsonTo("var/service/lambda/region/"+region+"/list-functions.json"));
+    var functions = client.then(listFunctions).then(AtomicFile.saveJsonTo("var/service/lambda/region/"+region+"/list-functions.json"));
 
     return Q.all([
         functions

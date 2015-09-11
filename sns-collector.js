@@ -2,6 +2,7 @@ var AWS = require('aws-sdk');
 var Q = require('q');
 var merge = require('merge');
 
+var AtomicFile = require('./atomic-file');
 var AwsDataUtils = require('./aws-data-utils');
 
 // https://docs.aws.amazon.com/general/latest/gr/rande.html#sns_region
@@ -59,8 +60,8 @@ var listSubscriptions = function (client) {
 var collectAllForRegion = function (clientConfig, region) {
     var client = promiseClient(clientConfig, region);
 
-    var topics = client.then(listTopics).then(AwsDataUtils.saveJsonTo("var/service/sns/region/"+region+"/list-topics.json"));
-    var subs = client.then(listSubscriptions).then(AwsDataUtils.saveJsonTo("var/service/sns/region/"+region+"/list-subscriptions.json"));
+    var topics = client.then(listTopics).then(AtomicFile.saveJsonTo("var/service/sns/region/"+region+"/list-topics.json"));
+    var subs = client.then(listSubscriptions).then(AtomicFile.saveJsonTo("var/service/sns/region/"+region+"/list-subscriptions.json"));
 
     return Q.all([
         topics,

@@ -2,6 +2,7 @@ var AWS = require('aws-sdk');
 var Q = require('q');
 var merge = require('merge');
 
+var AtomicFile = require('./atomic-file');
 var AwsDataUtils = require('./aws-data-utils');
 
 // https://docs.aws.amazon.com/general/latest/gr/rande.html#cw_region
@@ -46,7 +47,7 @@ var describeAlarms = function (client) {
 var collectAllForRegion = function (clientConfig, region) {
     var client = promiseClient(clientConfig, region);
 
-    var alarms = client.then(describeAlarms).then(AwsDataUtils.saveJsonTo("var/service/cloudwatch/region/"+region+"/describe-alarms.json"));
+    var alarms = client.then(describeAlarms).then(AtomicFile.saveJsonTo("var/service/cloudwatch/region/"+region+"/describe-alarms.json"));
 
     return Q.all([
         alarms

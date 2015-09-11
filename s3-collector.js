@@ -1,6 +1,7 @@
 var AWS = require('aws-sdk');
 var Q = require('q');
 
+var AtomicFile = require('./atomic-file');
 var AwsDataUtils = require('./aws-data-utils');
 
 var promiseClient = function () {
@@ -59,7 +60,7 @@ var getBucketData = function (client, loc, bucketName, method, processor, filena
         p = p.then(processor);
     }
 
-    return p.then(AwsDataUtils.saveJsonTo(asset))
+    return p.then(AtomicFile.saveJsonTo(asset))
         .fail(function (e) {
             if (e.statusCode === 404) {
                 return;
@@ -135,7 +136,7 @@ var getBucketDetails = function (client, bucketName) {
 var collectAll = function () {
     var client = promiseClient();
 
-    var buckets = client.then(listBuckets).then(AwsDataUtils.saveJsonTo("var/service/s3/list-buckets.json"));
+    var buckets = client.then(listBuckets).then(AtomicFile.saveJsonTo("var/service/s3/list-buckets.json"));
     var bucketDetails = Q.all([ client, buckets ]).spread(collectBucketDetails);
 
     return Q.all([

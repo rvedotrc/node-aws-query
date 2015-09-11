@@ -2,6 +2,7 @@ var AWS = require('aws-sdk');
 var Q = require('q');
 var merge = require('merge');
 
+var AtomicFile = require('./atomic-file');
 var AwsDataUtils = require('./aws-data-utils');
 
 // https://docs.aws.amazon.com/general/latest/gr/rande.html#ddb_region
@@ -30,7 +31,7 @@ var listTables = function (client) {
 var collectAllForRegion = function (clientConfig, region) {
     var client = promiseClient(clientConfig, region);
 
-    var tableNames = client.then(listTables).then(AwsDataUtils.saveJsonTo("var/service/dynamodb/region/"+region+"/list-tables.json"));
+    var tableNames = client.then(listTables).then(AtomicFile.saveJsonTo("var/service/dynamodb/region/"+region+"/list-tables.json"));
 
     return Q.all([
         tableNames

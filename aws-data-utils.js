@@ -2,7 +2,6 @@ var Q = require('q');
 var fs = require('fs');
 var merge = require('merge');
 
-var AtomicFile = require('./atomic-file');
 var Executor = require('./executor');
 
 var executor = new Executor(10);
@@ -129,18 +128,6 @@ exports.decodeJsonInline = function (key) {
             data[key] = JSON.parse(data[key]);
         }
         return data;
-    };
-};
-
-exports.saveContentTo = function (filename) {
-    return function (data) {
-        return AtomicFile.writeString(data, filename);
-    };
-};
-
-exports.saveJsonTo = function (filename) {
-    return function (data) {
-        return AtomicFile.writeJson(data, filename);
     };
 };
 

@@ -2,6 +2,7 @@ var AWS = require('aws-sdk');
 var Q = require('q');
 var merge = require('merge');
 
+var AtomicFile = require('./atomic-file');
 var AwsDataUtils = require('./aws-data-utils');
 
 // https://docs.aws.amazon.com/general/latest/gr/rande.html#ec2_region
@@ -84,10 +85,10 @@ var describeAvailabilityZones = function (client) {
 var collectAllForRegion = function (clientConfig, region) {
     var client = promiseClient(clientConfig, region);
 
-    var di = client.then(describeInstances).then(AwsDataUtils.saveJsonTo("var/service/ec2/region/"+region+"/describe-instances.json"));
-    var da = client.then(describeAddresses).then(AwsDataUtils.saveJsonTo("var/service/ec2/region/"+region+"/describe-addresses.json"));
-    var daa = client.then(describeAccountAttributes).then(AwsDataUtils.saveJsonTo("var/service/ec2/region/"+region+"/describe-account-attributes.json"));
-    var daz = client.then(describeAvailabilityZones).then(AwsDataUtils.saveJsonTo("var/service/ec2/region/"+region+"/describe-availability-zones.json"));
+    var di = client.then(describeInstances).then(AtomicFile.saveJsonTo("var/service/ec2/region/"+region+"/describe-instances.json"));
+    var da = client.then(describeAddresses).then(AtomicFile.saveJsonTo("var/service/ec2/region/"+region+"/describe-addresses.json"));
+    var daa = client.then(describeAccountAttributes).then(AtomicFile.saveJsonTo("var/service/ec2/region/"+region+"/describe-account-attributes.json"));
+    var daz = client.then(describeAvailabilityZones).then(AtomicFile.saveJsonTo("var/service/ec2/region/"+region+"/describe-availability-zones.json"));
     // many, many more things that can be added...
 
     return Q.all([

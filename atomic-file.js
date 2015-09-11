@@ -41,7 +41,21 @@ var writeJson = function (data, filename) {
     return writeString(CanonicalJson(data, null, 2)+"\n", filename).thenResolve(data);
 };
 
+var saveContentTo = function (filename) {
+    return function (data) {
+        return writeString(data, filename);
+    };
+};
+
+var saveJsonTo = function (filename) {
+    return function (data) {
+        return writeJson(data, filename);
+    };
+};
+
 module.exports = {
     writeString: writeString,
-    writeJson: writeJson
+    writeJson: writeJson,
+    saveContentTo: saveContentTo,
+    saveJsonTo: saveJsonTo
 };

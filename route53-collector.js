@@ -2,6 +2,7 @@ var AWS = require('aws-sdk');
 var Q = require('q');
 var merge = require('merge');
 
+var AtomicFile = require('./atomic-file');
 var AwsDataUtils = require('./aws-data-utils');
 
 var promiseClient = function (clientConfig) {
@@ -30,7 +31,7 @@ var listHostedZones = function (client) {
 var collectAll = function (clientConfig) {
     var client = promiseClient(clientConfig);
 
-    var lhz = client.then(listHostedZones).then(AwsDataUtils.saveJsonTo("var/service/route53/list-hosted-zones.json"));
+    var lhz = client.then(listHostedZones).then(AtomicFile.saveJsonTo("var/service/route53/list-hosted-zones.json"));
 
     return Q.all([
         lhz,
