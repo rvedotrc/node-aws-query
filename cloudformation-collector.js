@@ -1,6 +1,7 @@
 var AWS = require('aws-sdk');
 var Q = require('q');
 var merge = require('merge');
+var rimraf = require('rimraf');
 
 var AtomicFile = require('./atomic-file');
 var AwsDataUtils = require('./aws-data-utils');
@@ -38,13 +39,10 @@ var doStackDescription = function (client, region, stackName) {
         .then(function (s) {
             console.log(s);
             var d = s.Stacks[0];
-            // FIXME if it's in one of these states, we need to detect this,
-            // and succeed with zero assets.  This covers both collectAll and
-            // collectOneStack.
-            // FIXME if it's in *_IN_PROGRESS, we need to retry the whole of
-            // doStack (not just this asset) a bit later.
             if (d.StackStatus.match(/^(CREATE_FAILED|DELETE_COMPLETE)$/)) {
-                throw { code: "ValidationError", message: "Stack with id "+stackName+" does not exist" };
+                throw { code: "StackDoesNotExist" };
+            } else if (d.StackStatus.match(/.*_IN_PROGRESS$/)) {
+                throw { code: "StackInProgress" };
             }
             d.Capabilities.sort();
             d.Outputs.sort(comparator("OutputKey"));
@@ -83,7 +81,21 @@ var doStack = function (client, region, stackName) {
     var r = doStackResources(client, region, stackName);
     var t = doStackTemplate(client, region, stackName);
 
-    return Q.all([ d, r, t ]);
+    return Q.all([ d, r, t ])
+        .fail(function (e) {
+            if (e.code === 'StackDoesNotExist' || (e.code === 'ValidationError' && e.message && e.message.match(/^Stack.*does not exist/))) {
+                // Just in case.
+                console.log("No such stack", stackName, "in", region);
+                return Q.nfcall(rimraf, "var/service/cloudformation/region/"+region+"/stack/" + stackName);
+            } else if (e.code === 'StackInProgress') {
+                console.log("Stack", stack, "in", region, "is not at rest.  Waiting 10s and trying again.");
+                return Q.delay(10000).then(function () {
+                    return Q.all([ client, region, stackName ]).spread(doStack);
+                });
+            } else {
+                throw e;
+            }
+        });
 };
 
 var collectAllForRegion = function (clientConfig, region) {
@@ -121,15 +133,7 @@ var collectOneStack = function (clientConfig, stack) {
 
     var client = promiseClient(clientConfig, region);
 
-    return Q.all([ client, region, stackName ])
-        .spread(doStack)
-        .fail(function (e) {
-            if (e.code === 'ValidationError' && e.message && e.message.match(/does not exist/)) {
-                console.log("Swallowing 'stack does not exist' error:", e.message);
-                return;
-            }
-            throw e;
-        });
+    return Q.all([ client, region, stackName ]).spread(doStack);
 };
 
 module.exports = {
