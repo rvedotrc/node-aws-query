@@ -31,8 +31,8 @@ var comparator = function (k) {
     };
 };
 
-var doStack = function (client, region, stackName) {
-    var d = Q(client)
+var doStackDescription = function (client, region, stackName) {
+    return Q(client)
         .then(function (cfn) { return AwsDataUtils.collectFromAws(cfn, "describeStacks", { StackName: stackName }); })
         .then(AwsDataUtils.tidyResponseMetadata)
         .then(function (s) {
@@ -53,8 +53,10 @@ var doStack = function (client, region, stackName) {
             return s;
         })
         .then(AtomicFile.saveJsonTo("var/service/cloudformation/region/"+region+"/stack/" + stackName + "/description.json"));
+};
 
-    var r = Q(client)
+var doStackResources = function (client, region, stackName) {
+    return Q(client)
         .then(function (cfn) {
             var p = AwsDataUtils.paginationHelper("NextToken", "NextToken", "StackResourceSummaries");
             return AwsDataUtils.collectFromAws(cfn, "listStackResources", { StackName: stackName }, p);
@@ -66,12 +68,20 @@ var doStack = function (client, region, stackName) {
             return d;
         })
         .then(AtomicFile.saveJsonTo("var/service/cloudformation/region/"+region+"/stack/" + stackName + "/resources.json"));
+};
 
-    var t = Q(client)
+var doStackTemplate = function (client, region, stackName) {
+    return Q(client)
         .then(function (cfn) { return AwsDataUtils.collectFromAws(cfn, "getTemplate", { StackName: stackName }); })
         .then(AwsDataUtils.tidyResponseMetadata)
         .then(function (d) { return JSON.parse(d.TemplateBody); })
         .then(AtomicFile.saveJsonTo("var/service/cloudformation/region/"+region+"/stack/" + stackName + "/template.json"));
+};
+
+var doStack = function (client, region, stackName) {
+    var d = doStackDescription(client, region, stackName);
+    var r = doStackResources(client, region, stackName);
+    var t = doStackTemplate(client, region, stackName);
 
     return Q.all([ d, r, t ]);
 };
