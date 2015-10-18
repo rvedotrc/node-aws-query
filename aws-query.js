@@ -53,7 +53,7 @@ if (config.cloudformation) {
     if (config.stack) {
         CloudFormationCollector.collectOneStack(clientConfig, config.stack).done();
     } else {
-        CloudFormationCollector.collectAll(clientConfig).done();
+        CloudFormationCollector.collectAll(clientConfig, config.exhaustive).done();
     }
 } else {
     Q.all([

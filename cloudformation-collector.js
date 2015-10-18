@@ -1,5 +1,7 @@
 var AWS = require('aws-sdk');
+var CanonicalJson = require('canonical-json');
 var Q = require('q');
+var fs = require('fs');
 var merge = require('merge');
 var rimraf = require('rimraf');
 
@@ -80,8 +82,9 @@ var doStack = function (client, region, stackName) {
     var d = doStackDescription(client, region, stackName);
     var r = doStackResources(client, region, stackName);
     var t = doStackTemplate(client, region, stackName);
+    var legacy = Q.nfcall(rimraf, "var/service/cloudformation/region/"+region+"/stack/" + stackName + "/summary.json");
 
-    return Q.all([ d, r, t ])
+    return Q.all([ d, r, t, legacy ])
         .fail(function (e) {
             if (e.code === 'StackDoesNotExist' || (e.code === 'ValidationError' && e.message && e.message.match(/^Stack.*does not exist/))) {
                 // Just in case.
@@ -98,28 +101,140 @@ var doStack = function (client, region, stackName) {
         });
 };
 
-var collectAllForRegion = function (clientConfig, region) {
-    var client = promiseClient(clientConfig, region);
+var convertTimestamp = function (t) {
+    if (!t) return t;
+    if (t.getTime) return t.getTime();
+    var ms = Date.parse(t);
+    if (!ms) throw "Failed to parse date string: " + t;
+    return ms;
+};
 
-    var stacks = client
-        .then(function (cfn) {
-            var p = AwsDataUtils.paginationHelper("NextToken", "NextToken", "Stacks");
-            return AwsDataUtils.collectFromAws(cfn, "describeStacks", {}, p);
+var descriptionMatchesSummary = function (description, summary) {
+    if (!description) return false;
+    if (description.Stacks[0].StackId !== summary.StackId) return false;
+    if (description.Stacks[0].StackStatus !== summary.StackStatus) return false;
+    if (convertTimestamp(description.Stacks[0].LastUpdatedTime) !== convertTimestamp(summary.LastUpdatedTime)) return false;
+    return true;
+};
+
+var conditionallyUpdateStack = function (client, region, summary) {
+    return Q.nfcall(fs.readFile, "var/service/cloudformation/region/"+region+"/stack/" + summary.StackName + "/description.json")
+        .then(JSON.parse, function (e) {
+            if (e.code === 'ENOENT') return null;
+            throw e;
         })
-        .then(AwsDataUtils.tidyResponseMetadata);
-
-    return stacks
-        .then(function (s) {
-            return Q.all(
-                s.Stacks.map(function (sd) {
-                    return Q.all([ client, region, sd.StackName ]).spread(doStack);
-                })
-            );
+        .then(function (d) {
+            if (descriptionMatchesSummary(d, summary)) {
+                // console.log("No update required for", summary.StackName);
+            } else {
+                console.log("Update required for", summary.StackName);
+                // console.log("  ", d ? d.Stacks[0] : null);
+                // console.log("  ", summary);
+                return doStack(client, region, summary.StackName);
+            }
         });
 };
 
-var collectAll = function (clientConfig) {
-    return Q.all(regions.map(function (r) { return collectAllForRegion(clientConfig, r); }));
+// Documentation is unclear whether or not this is exhaustive
+var interestingStackStatuses = [
+    "CREATE_IN_PROGRESS",
+    // "CREATE_FAILED",
+    "CREATE_COMPLETE",
+    "ROLLBACK_IN_PROGRESS",
+    "ROLLBACK_FAILED",
+    "ROLLBACK_COMPLETE",
+    "DELETE_IN_PROGRESS",
+    "DELETE_FAILED",
+    // "DELETE_COMPLETE",
+    "UPDATE_IN_PROGRESS",
+    "UPDATE_COMPLETE_CLEANUP_IN_PROGRESS",
+    "UPDATE_COMPLETE",
+    "UPDATE_ROLLBACK_IN_PROGRESS",
+    "UPDATE_ROLLBACK_FAILED",
+    "UPDATE_ROLLBACK_COMPLETE_CLEANUP_IN_PROGRESS",
+    "UPDATE_ROLLBACK_COMPLETE",
+];
+
+var collectAllForRegion = function (clientConfig, region, exhaustive) {
+    var client = promiseClient(clientConfig, region);
+
+    var allStackNames = {};
+    Object.setPrototypeOf(allStackNames, null);
+
+    var nullPaginator = {
+        nextArgs: function () {}
+    };
+
+    var params = {};
+    if (!exhaustive) {
+        params.StackStatusFilter = interestingStackStatuses;
+    }
+
+    var doPage = function (cfn, args) {
+        return AwsDataUtils.collectFromAws(cfn, "listStacks", args, nullPaginator)
+            .then(function (r) {
+                // console.log("Got a page of results for", r.StackSummaries.map(function (s) { return s.StackName; }));
+
+                // Return promises of: processing stable stacks; polling
+                // unstable stacks; and querying the next page, if any.
+                var promises = [];
+
+                r.StackSummaries.map(function (summary) {
+                    if (summary.StackStatus === "CREATE_FAILED" || summary.StackStatus === "DELETE_COMPLETE") return;
+
+                    // We now have a possibly-unstable stack summary
+                    if (summary.StackStatus.match(/.*IN_PROGRESS$/)) {
+                        console.log("Polling unstable stack", summary.StackName);
+                        promises.push(
+                            Q.all([ client, region, summary.stackName ]).delay(10000).spread(doStack)
+                        );
+                    } else {
+                        // console.log("Found stable stack", summary.StackName, JSON.stringify(summary));
+                        allStackNames[summary.StackName] = true;
+                        promises.push(
+                            conditionallyUpdateStack(client, region, summary)
+                        );
+                    }
+                });
+
+                if (r.NextToken) {
+                    // console.log("Promising next page");
+                    promises.push(doPage(cfn, merge(true, args, { NextToken: r.NextToken })));
+                }
+
+                return Q.all(promises);
+            });
+    };
+
+    return Q.all([ client, Q(params) ]).spread(doPage)
+        .then(function () {
+            console.log("All stacks in", region, "enumerated");
+            return deleteOtherSubdirs("var/service/cloudformation/region/"+region+"/stack", allStackNames);
+        });
+};
+
+var deleteOtherSubdirs = function (stacksDir, allStackNames) {
+    return Q.nfcall(fs.readdir, stacksDir)
+        .then(function (childDirs) {
+            var toDelete = childDirs.filter(function (n) { return !allStackNames[n]; });
+            if (toDelete.length > 0) {
+                console.log("Deleting", toDelete, "from", stacksDir);
+                return Q.all(
+                    toDelete.map(function (stackName) {
+                        return Q.nfcall(rimraf, stacksDir + "/" + stackName);
+                    })
+                );
+            }
+        }, function (e) {
+            if (e.code === 'ENOENT') return;
+            console.log(e);
+            throw e;
+        });
+};
+
+var collectAll = function (clientConfig, exhaustive) {
+    AwsDataUtils.setConcurrency(2);
+    return Q.all(regions.map(function (r) { return collectAllForRegion(clientConfig, r, exhaustive); }));
 };
 
 var collectOneStack = function (clientConfig, stack) {

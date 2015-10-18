@@ -129,3 +129,7 @@ exports.decodeJsonInline = function (key) {
     };
 };
 
+exports.setConcurrency = function (n) {
+    executor = new Executor(n);
+};
+
