@@ -89,7 +89,7 @@ var doStack = function (client, region, stackName) {
             if (e.code === 'StackDoesNotExist' || (e.code === 'ValidationError' && e.message && e.message.match(/^Stack.*does not exist/))) {
                 // Just in case.
                 console.log("No such stack", stackName, "in", region);
-                return Q.nfcall(rimraf, "var/service/cloudformation/region/"+region+"/stack/" + stackName);
+                return Q.allSettled([ d, r, t ]).nfcall(rimraf, "var/service/cloudformation/region/"+region+"/stack/" + stackName);
             } else if (e.code === 'StackInProgress') {
                 console.log("Stack", stack, "in", region, "is not at rest.  Waiting 10s and trying again.");
                 return Q.delay(10000).then(function () {
