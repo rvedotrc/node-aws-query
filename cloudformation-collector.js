@@ -38,7 +38,6 @@ var doStackDescription = function (client, region, stackName) {
         .then(function (cfn) { return AwsDataUtils.collectFromAws(cfn, "describeStacks", { StackName: stackName }); })
         .then(AwsDataUtils.tidyResponseMetadata)
         .then(function (s) {
-            console.log(s);
             var d = s.Stacks[0];
             if (d.StackStatus.match(/^(CREATE_FAILED|DELETE_COMPLETE)$/)) {
                 throw { code: "StackDoesNotExist" };
@@ -185,7 +184,7 @@ var collectAllForRegion = function (clientConfig, region, exhaustive) {
                     if (summary.StackStatus.match(/.*IN_PROGRESS$/)) {
                         console.log("Polling unstable stack", summary.StackName);
                         promises.push(
-                            Q.all([ client, region, summary.stackName ]).delay(10000).spread(doStack)
+                            Q.all([ client, region, summary.StackName ]).delay(10000).spread(doStack)
                         );
                     } else {
                         // console.log("Found stable stack", summary.StackName, JSON.stringify(summary));
