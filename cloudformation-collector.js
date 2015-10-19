@@ -1,5 +1,4 @@
 var AWS = require('aws-sdk');
-var CanonicalJson = require('canonical-json');
 var Q = require('q');
 var fs = require('fs');
 var merge = require('merge');
