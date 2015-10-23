@@ -34,7 +34,8 @@ describe("AtomicFile", function () {
         m.expects("rename").once().withArgs(tmpFile, filename).yields(null);
         m.expects("unlink").never();
 
-        AtomicFile.writeString(content, filename)
+        return Q(content)
+            .then(AtomicFile.saveContentTo(filename))
             .then(function (data) {
                 data.should.eql(content);
                 m.verify();
@@ -47,7 +48,8 @@ describe("AtomicFile", function () {
         m.expects("rename").never();
         m.expects("unlink").once().withArgs(tmpFile).yields(null);
 
-        AtomicFile.writeString(content, filename)
+        return Q(content)
+            .then(AtomicFile.saveContentTo(filename))
             .fail(function (data) {
                 data.should.eql(anError);
                 mochaDone();
@@ -59,7 +61,8 @@ describe("AtomicFile", function () {
         m.expects("rename").never();
         m.expects("unlink").once().withArgs(tmpFile).yields('ignore me');
 
-        AtomicFile.writeString(content, filename)
+        return Q(content)
+            .then(AtomicFile.saveContentTo(filename))
             .fail(function (data) {
                 data.should.eql(anError);
                 mochaDone();
@@ -71,7 +74,8 @@ describe("AtomicFile", function () {
         m.expects("rename").once().withArgs(tmpFile, filename).yields(anError);
         m.expects("unlink").once().withArgs(tmpFile).yields(null);
 
-        AtomicFile.writeString(content, filename)
+        return Q(content)
+            .then(AtomicFile.saveContentTo(filename))
             .fail(function (data) {
                 data.should.eql(anError);
                 mochaDone();
@@ -83,7 +87,8 @@ describe("AtomicFile", function () {
         m.expects("rename").once().withArgs(tmpFile, filename).yields(anError);
         m.expects("unlink").once().withArgs(tmpFile).yields('ignore me');
 
-        AtomicFile.writeString(content, filename)
+        return Q(content)
+            .then(AtomicFile.saveContentTo(filename))
             .fail(function (data) {
                 data.should.eql(anError);
                 mochaDone();
@@ -97,7 +102,8 @@ describe("AtomicFile", function () {
         // TODO we're not actually testing that the TreeMaker is called
         // *first*
 
-        AtomicFile.writeString(content, filename)
+        return Q(content)
+            .then(AtomicFile.saveContentTo(filename))
             .then(function (data) {
                 m.verify();
                 treeMakerMock.verify();

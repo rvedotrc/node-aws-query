@@ -54,8 +54,6 @@ var saveJsonTo = function (filename) {
 };
 
 module.exports = {
-    writeString: writeString,
-    writeJson: writeJson,
     saveContentTo: saveContentTo,
     saveJsonTo: saveJsonTo
 };
