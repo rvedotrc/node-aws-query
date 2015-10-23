@@ -82,6 +82,27 @@ var describeAvailabilityZones = function (client) {
         });
 };
 
+var describeVolumes = function (client) {
+    var paginationHelper = AwsDataUtils.paginationHelper("NextToken", "NextToken", "Volumes");
+
+    return AwsDataUtils.collectFromAws(client, "describeVolumes", {}, paginationHelper)
+        .then(function (r) {
+            r.Volumes.sort(function (a, b) {
+                if (a.VolumeId < b.VolumeId) return -1;
+                else if (a.VolumeId > b.VolumeId) return +1;
+                else return 0;
+            });
+            r.Volumes.map(function (v) {
+                v.Tags.sort(function (a, b) {
+                    if (a.Key < b.Key) return -1;
+                    if (a.Key > b.Key) return +1;
+                    return 0;
+                });
+            });
+            return r;
+        });
+};
+
 var collectAllForRegion = function (clientConfig, region) {
     var client = promiseClient(clientConfig, region);
 
@@ -89,6 +110,7 @@ var collectAllForRegion = function (clientConfig, region) {
     var da = client.then(describeAddresses).then(AtomicFile.saveJsonTo("var/service/ec2/region/"+region+"/describe-addresses.json"));
     var daa = client.then(describeAccountAttributes).then(AtomicFile.saveJsonTo("var/service/ec2/region/"+region+"/describe-account-attributes.json"));
     var daz = client.then(describeAvailabilityZones).then(AtomicFile.saveJsonTo("var/service/ec2/region/"+region+"/describe-availability-zones.json"));
+    var dv = client.then(describeVolumes).then(AtomicFile.saveJsonTo("var/service/ec2/region/"+region+"/describe-volumes.json"));
     // many, many more things that can be added...
 
     return Q.all([
@@ -96,6 +118,7 @@ var collectAllForRegion = function (clientConfig, region) {
         da,
         daa,
         daz,
+        dv,
         Q(true)
     ]);
 };
