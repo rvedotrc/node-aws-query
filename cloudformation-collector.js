@@ -91,7 +91,7 @@ var doStack = function (client, region, stackName) {
                     return Q.nfcall(rimraf, "var/service/cloudformation/region/"+region+"/stack/" + stackName);
                 });
             } else if (e.code === 'StackInProgress') {
-                console.log("Stack", stack, "in", region, "is not at rest.  Waiting 10s and trying again.");
+                console.log("Stack", stackName, "in", region, "is not at rest.  Waiting 10s and trying again.");
                 return Q.delay(10000).then(function () {
                     return Q.all([ client, region, stackName ]).spread(doStack);
                 });
