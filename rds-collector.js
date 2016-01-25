@@ -26,6 +26,7 @@ var promiseClient = function (clientConfig, region) {
 var describeDBInstances = function (client) {
     var paginationHelper = AwsDataUtils.paginationHelper("Marker", "Marker", "DBInstances");
     return AwsDataUtils.collectFromAws(client, "describeDBInstances", {}, paginationHelper)
+        .then(AwsDataUtils.tidyResponseMetadata)
         .then(function (r) {
             r.DBInstances.sort(function (a, b) {
                 if (a.DBInstanceIdentifier < b.DBInstanceIdentifier) return -1;
