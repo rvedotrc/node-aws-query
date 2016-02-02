@@ -15,12 +15,11 @@ limitations under the License.
 */
 
 var Q = require('q');
+var FixedSizeExecutor = require('fixed-size-executor');
 var fs = require('fs');
 var merge = require('merge');
 
-var Executor = require('./executor');
-
-var executor = new Executor(10);
+var executor = new FixedSizeExecutor(10);
 
 var rejectIfContainsPagination = function (deferred, data) {
     var stringKeys = [];
@@ -146,6 +145,6 @@ exports.decodeJsonInline = function (key) {
 };
 
 exports.setConcurrency = function (n) {
-    executor = new Executor(n);
+    executor = new FixedSizeExecutor(n);
 };
 
