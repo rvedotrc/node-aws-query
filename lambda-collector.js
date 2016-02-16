@@ -37,7 +37,8 @@ var promiseClient = function (clientConfig, region) {
 var getFunctionPolicy = function (client, region, functionName) {
     return AwsDataUtils.collectFromAws(client, "getPolicy", {FunctionName: functionName})
         .then(function (r) {
-            return Q(JSON.parse(r.Policy))
+            return Q(r)
+                .then(AwsDataUtils.decodeJsonInline("Policy"))
                 .then(AtomicFile.saveJsonTo("var/service/lambda/region/"+region+"/function/"+functionName+"/policy.json"));
         }, function (e) {
             if (e.code == "ResourceNotFoundException") return;
