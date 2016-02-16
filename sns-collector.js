@@ -74,15 +74,36 @@ var listSubscriptions = function (client) {
         });
 };
 
+var getAttributesForTopic = function (client, region, topicArn) {
+    var topicName = topicArn.split(/:/)[5];
+
+    return AwsDataUtils.collectFromAws(client, "getTopicAttributes", { TopicArn: topicArn })
+        .then(AwsDataUtils.tidyResponseMetadata)
+        .then(function (r) { return r.Attributes; })
+        .then(AwsDataUtils.decodeJsonInline("Policy"))
+        .then(AwsDataUtils.decodeJsonInline("EffectiveDeliveryPolicy"))
+        .then(AtomicFile.saveJsonTo("var/service/sns/region/"+region+"/topic/" + topicName + "/attributes.json"));
+};
+
+var getAttributesForAllTopics = function (client, region, topics) {
+    return Q.all(
+        topics.Topics.map(function (t) {
+            return Q([ client, region, t.TopicArn ]).spread(getAttributesForTopic);
+        })
+    );
+};
+
 var collectAllForRegion = function (clientConfig, region) {
     var client = promiseClient(clientConfig, region);
 
     var topics = client.then(listTopics).then(AtomicFile.saveJsonTo("var/service/sns/region/"+region+"/list-topics.json"));
     var subs = client.then(listSubscriptions).then(AtomicFile.saveJsonTo("var/service/sns/region/"+region+"/list-subscriptions.json"));
+    var attrs = Q.all([ client, region, topics ]).spread(getAttributesForAllTopics);
 
     return Q.all([
         topics,
-        subs
+        subs,
+        attrs,
     ]);
 };
 
