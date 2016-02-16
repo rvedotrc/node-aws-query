@@ -34,6 +34,27 @@ var promiseClient = function (clientConfig, region) {
     return Q(new AWS.Lambda(config));
 };
 
+var getFunctionPolicy = function (client, region, functionName) {
+    return AwsDataUtils.collectFromAws(client, "getPolicy", {FunctionName: functionName})
+        .then(function (r) {
+            return Q(JSON.parse(r.Policy))
+                .then(AtomicFile.saveJsonTo("var/service/lambda/region/"+region+"/function/"+functionName+"/policy.json"));
+        }, function (e) {
+            if (e.code == "ResourceNotFoundException") return;
+            throw e;
+        });
+};
+
+var getAllFunctionPolicies = function (client, region, functions) {
+    return Q.all(
+        functions.Functions.map(function (f) {
+            console.log(f);
+            var n = f.FunctionName;
+            return Q([ client, region, n ]).spread(getFunctionPolicy);
+        })
+    );
+};
+
 var listFunctions = function (client) {
     // pagination: NextMarker
     var paginationHelper = AwsDataUtils.paginationHelper("NextMarker", "Marker", "Functions");
@@ -55,8 +76,22 @@ var collectAllForRegion = function (clientConfig, region) {
 
     var functions = client.then(listFunctions).then(AtomicFile.saveJsonTo("var/service/lambda/region/"+region+"/list-functions.json"));
 
+    var getAllPolicies = Q.all([ client, region, functions ]).spread(getAllFunctionPolicies);
+
+    // A note on event sources:
+
+    // For "pull" events (kinesis streams, etc), could call
+    // getEventSourceMapping.
+
+    // For "push" events, the answer lies in the services doing the sending -
+    // e.g. S3 bucket notification configuration; SNS subscription.
+
+    // Alas "scheduled" events are sent from the "events.amazonaws.com"
+    // service, which is undocumented and has no API :-(
+
     return Q.all([
-        functions
+        functions,
+        getAllPolicies,
     ]);
 };
 
