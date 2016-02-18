@@ -43,22 +43,10 @@ var rejectIfContainsPagination = function (deferred, data) {
 
 var doCollectFromAws = function(nextJob, deferred, client, method, args, paginationHelper) {
     if (!args) args = {};
-    console.log("collectFromAws", client.serviceIdentifier, method, args);
+    console.log("collectFromAws", client.serviceIdentifier, client.config.region, method, JSON.stringify(args));
 
     var cb = function (err, data) {
         if (err === null) {
-            // To collect information on which method calls return what keys,
-            // particularly with regards to pagination.  The docs don't seem
-            // consistent.
-            var apiMeta = {
-                Service: client.serviceIdentifier,
-                Method: method,
-                Region: client.config.region,
-                RequestKeys: Object.keys(args || {}).sort(),
-                ResponseKeys: Object.keys(data || {}).sort()
-            };
-            console.log("apiMeta =", JSON.stringify(apiMeta));
-
             if (paginationHelper) {
                 var nextArgs = paginationHelper.nextArgs(args, data);
                 if (nextArgs) {
@@ -81,6 +69,7 @@ var doCollectFromAws = function(nextJob, deferred, client, method, args, paginat
                     client[method].apply(client, [args, cb]);
                 }, delay);
             } else {
+                console.log("collectFromAws failed", client.serviceIdentifier, client.config.region, method, JSON.stringify(args), err);
                 deferred.reject(err);
             }
         }
