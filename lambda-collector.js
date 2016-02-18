@@ -49,7 +49,6 @@ var getFunctionPolicy = function (client, region, functionName) {
 var getAllFunctionPolicies = function (client, region, functions) {
     return Q.all(
         functions.Functions.map(function (f) {
-            console.log(f);
             var n = f.FunctionName;
             return Q([ client, region, n ]).spread(getFunctionPolicy);
         })
