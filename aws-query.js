@@ -19,6 +19,7 @@ var proxy = require('https-proxy-agent');
 
 var AutoscalingCollector = require('./autoscaling-collector');
 var CloudFormationCollector = require('./cloudformation-collector');
+var CloudTrailCollector = require('./cloudtrail-collector');
 var CloudWatchCollector = require('./cloudwatch-collector');
 var DynamoDB = require('./dynamodb-collector');
 var EC2Collector = require('./ec2-collector');
@@ -75,6 +76,7 @@ if (config.cloudformation) {
 } else {
     Q.all([
         AutoscalingCollector.collectAll(clientConfig),
+        CloudTrailCollector.collectAll(clientConfig),
         CloudWatchCollector.collectAll(clientConfig),
         DynamoDB.collectAll(clientConfig),
         EC2Collector.collectAll(clientConfig),
