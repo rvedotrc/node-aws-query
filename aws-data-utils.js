@@ -68,6 +68,12 @@ var doCollectFromAws = function(nextJob, deferred, client, method, args, paginat
                 setTimeout(function () {
                     client[method].apply(client, [args, cb]);
                 }, delay);
+            } else if (err.retryable === true) {
+                var delay = 2000;
+                console.log("collectFromAws failed but will retry shortly", client.serviceIdentifier, client.config.region, method, JSON.stringify(args), err);
+                setTimeout(function () {
+                    client[method].apply(client, [args, cb]);
+                }, delay);
             } else {
                 console.log("collectFromAws failed", client.serviceIdentifier, client.config.region, method, JSON.stringify(args), err);
                 deferred.reject(err);
