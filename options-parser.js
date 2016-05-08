@@ -20,6 +20,7 @@ var parse = function (args) {
         .version('0.0.1')
         .option('--directory [DIR]', "Save output under DIR (default: ./var)")
         .option('--services [PATTERN]', "Only process services whose names match PATTERN")
+        .option('--regions [PATTERN]', "For regioned services, only process regions matching PATTERN")
         .option('--cloudformation', "Collect cloudformation data and nothing else")
         .option('--exhaustive', "Do not optimise by stack status")
         .option('--stack <arn>', "Only process this stack (only valid with --cloudformation)")

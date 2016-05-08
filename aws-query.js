@@ -50,9 +50,8 @@ var clientConfig = {};
 // glacier
 // kinesis
 
-// Also, TODO, add a command-line way to run a subset of the regions.
-
 require('./util/atomic-file').setRootDir(config.directory || "var");
+require('./regions').setFilter(config.regions || ".");
 
 if (config.cloudformation) {
     var CloudFormationCollector = require('./collectors/cloudformation-collector');
