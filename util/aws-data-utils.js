@@ -19,7 +19,13 @@ var FixedSizeExecutor = require('fixed-size-executor');
 var fs = require('fs');
 var merge = require('merge');
 
-var executor = new FixedSizeExecutor(10);
+var executors = {};
+var executorConcurrency = 10;
+var executorForClient = function (client) {
+    var key = client.endpoint.hostname || "default";
+    if (!executors[key]) executors[key] = new FixedSizeExecutor(executorConcurrency);
+    return executors[key];
+};
 
 var rejectIfContainsPagination = function (deferred, data) {
     var stringKeys = [];
@@ -93,7 +99,7 @@ exports.getDelay = function () {
 
 exports.collectFromAws = function (client, method, args, paginationHelper) {
     var deferred = Q.defer();
-    executor.submit(doCollectFromAws, deferred, client, method, args, paginationHelper);
+    executorForClient(client).submit(doCollectFromAws, deferred, client, method, args, paginationHelper);
     return deferred.promise;
 };
 
@@ -141,6 +147,7 @@ exports.decodeJsonInline = function (key) {
 };
 
 exports.setConcurrency = function (n) {
-    executor = new FixedSizeExecutor(n);
+    executorConcurrency = n;
+    executors = {};
 };
 
