@@ -62,14 +62,15 @@ var doCollectFromAws = function(nextJob, deferred, client, method, args, paginat
             // Resolving a deferred twice (see above) is OK.  First wins.
             deferred.resolve(data);
         } else {
+            var delay;
             if (err.code === 'Throttling') {
-                var delay = exports.getDelay();
+                delay = exports.getDelay();
                 console.log("Will try again in", delay, "ms");
                 setTimeout(function () {
                     client[method].apply(client, [args, cb]);
                 }, delay);
             } else if (err.retryable === true) {
-                var delay = 2000;
+                delay = 2000;
                 console.log("collectFromAws failed but will retry shortly", client.serviceIdentifier, client.config.region, method, JSON.stringify(args), err);
                 setTimeout(function () {
                     client[method].apply(client, [args, cb]);
