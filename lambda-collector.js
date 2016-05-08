@@ -21,14 +21,7 @@ var merge = require('merge');
 var AtomicFile = require('./atomic-file');
 var AwsDataUtils = require('./aws-data-utils');
 
-// https://docs.aws.amazon.com/general/latest/gr/rande.html#lambda_region
-var regions = [
-    "us-east-1",
-    "us-west-2",
-    "eu-west-1",
-    "eu-central-1",
-    "ap-northeast-1"
-];
+var regions = require('./regions').regionsForService('lambda');
 
 var promiseClient = function (clientConfig, region) {
     var config = merge(clientConfig, { region: region });

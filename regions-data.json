@@ -1,0 +1,116 @@
+{
+  "autoscaling": [
+    "us-east-1",
+    "us-west-2",
+    "us-west-1",
+    "eu-west-1",
+    "eu-central-1",
+    "ap-southeast-1",
+    "ap-southeast-2",
+    "ap-northeast-1",
+    "ap-northeast-2",
+    "sa-east-1"
+  ],
+  "cloudformation": [
+    "us-east-1",
+    "us-west-2",
+    "us-west-1",
+    "eu-west-1",
+    "eu-central-1",
+    "ap-southeast-1",
+    "ap-southeast-2",
+    "ap-northeast-1",
+    "ap-northeast-2",
+    "sa-east-1"
+  ],
+  "cloudtrail": [
+    "us-east-1",
+    "us-west-2",
+    "us-west-1",
+    "eu-west-1",
+    "eu-central-1",
+    "ap-southeast-1",
+    "ap-southeast-2",
+    "ap-northeast-1",
+    "ap-northeast-2",
+    "sa-east-1"
+  ],
+  "cloudwatch": [
+    "us-east-1",
+    "us-west-2",
+    "us-west-1",
+    "eu-west-1",
+    "eu-central-1",
+    "ap-southeast-1",
+    "ap-southeast-2",
+    "ap-northeast-1",
+    "ap-northeast-2",
+    "sa-east-1"
+  ],
+  "dynamodb": [
+    "us-east-1",
+    "us-west-2",
+    "us-west-1",
+    "eu-west-1",
+    "eu-central-1",
+    "ap-southeast-1",
+    "ap-southeast-2",
+    "ap-northeast-1",
+    "ap-northeast-2",
+    "sa-east-1"
+  ],
+  "ec2": [
+    "us-east-1",
+    "us-west-2",
+    "us-west-1",
+    "eu-west-1",
+    "eu-central-1",
+    "ap-southeast-1",
+    "ap-southeast-2",
+    "ap-northeast-1",
+    "ap-northeast-2",
+    "sa-east-1"
+  ],
+  "lambda": [
+    "us-east-1",
+    "us-west-2",
+    "eu-west-1",
+    "ap-northeast-1"
+  ],
+  "rds": [
+    "us-east-1",
+    "us-west-2",
+    "us-west-1",
+    "eu-west-1",
+    "eu-central-1",
+    "ap-southeast-1",
+    "ap-southeast-2",
+    "ap-northeast-1",
+    "ap-northeast-2",
+    "sa-east-1"
+  ],
+  "sns": [
+    "us-east-1",
+    "us-west-2",
+    "us-west-1",
+    "eu-west-1",
+    "eu-central-1",
+    "ap-southeast-1",
+    "ap-southeast-2",
+    "ap-northeast-1",
+    "ap-northeast-2",
+    "sa-east-1"
+  ],
+  "sqs": [
+    "us-east-1",
+    "us-west-2",
+    "us-west-1",
+    "eu-west-1",
+    "eu-central-1",
+    "ap-southeast-1",
+    "ap-southeast-2",
+    "ap-northeast-1",
+    "ap-northeast-2",
+    "sa-east-1"
+  ]
+}
