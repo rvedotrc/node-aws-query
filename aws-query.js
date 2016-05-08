@@ -17,20 +17,20 @@ limitations under the License.
 var Q = require('q');
 var proxy = require('https-proxy-agent');
 
-var AutoscalingCollector = require('./autoscaling-collector');
-var CloudFormationCollector = require('./cloudformation-collector');
-var CloudTrailCollector = require('./cloudtrail-collector');
-var CloudWatchCollector = require('./cloudwatch-collector');
-var DynamoDB = require('./dynamodb-collector');
-var EC2Collector = require('./ec2-collector');
-var EventsCollector = require('./events-collector');
-var IAMCollector = require('./iam-collector');
-var LambdaCollector = require('./lambda-collector');
-var RDSCollector = require('./rds-collector');
-var Route53Collector = require('./route53-collector');
-var S3Collector = require('./s3-collector');
-var SNSCollector = require('./sns-collector');
-var SQSCollector = require('./sqs-collector');
+var AutoscalingCollector = require('./collectors/autoscaling-collector');
+var CloudFormationCollector = require('./collectors/cloudformation-collector');
+var CloudTrailCollector = require('./collectors/cloudtrail-collector');
+var CloudWatchCollector = require('./collectors/cloudwatch-collector');
+var DynamoDB = require('./collectors/dynamodb-collector');
+var EC2Collector = require('./collectors/ec2-collector');
+var EventsCollector = require('./collectors/events-collector');
+var IAMCollector = require('./collectors/iam-collector');
+var LambdaCollector = require('./collectors/lambda-collector');
+var RDSCollector = require('./collectors/rds-collector');
+var Route53Collector = require('./collectors/route53-collector');
+var S3Collector = require('./collectors/s3-collector');
+var SNSCollector = require('./collectors/sns-collector');
+var SQSCollector = require('./collectors/sqs-collector');
 
 Q.longStackSupport = true;
 

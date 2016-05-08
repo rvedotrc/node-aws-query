@@ -2,7 +2,7 @@ var assert = require("assert");
 require("should");
 var sinon = require("sinon");
 
-var AwsDataUtils = require("../aws-data-utils");
+var AwsDataUtils = require("../util/aws-data-utils");
 
 describe("AwsDataUtils", function () {
 

@@ -18,44 +18,37 @@ var AWS = require('aws-sdk');
 var Q = require('q');
 var merge = require('merge');
 
-var AtomicFile = require('./atomic-file');
-var AwsDataUtils = require('./aws-data-utils');
+var AtomicFile = require('../util/atomic-file');
+var AwsDataUtils = require('../util/aws-data-utils');
 
-var regions = require('./regions').regionsForService('rds');
+var regions = require('../regions').regionsForService('cloudtrail');
 
 var promiseClient = function (clientConfig, region) {
     var config = merge(clientConfig, { region: region });
-    return Q(new AWS.RDS(config));
+    return Q(new AWS.CloudTrail(config));
 };
 
-var describeDBInstances = function (client) {
-    var paginationHelper = AwsDataUtils.paginationHelper("Marker", "Marker", "DBInstances");
-    return AwsDataUtils.collectFromAws(client, "describeDBInstances", {}, paginationHelper)
+var describeTrails = function (client) {
+    return(AwsDataUtils.collectFromAws(client, "describeTrails", {})
         .then(AwsDataUtils.tidyResponseMetadata)
         .then(function (r) {
-            r.DBInstances.sort(function (a, b) {
-                if (a.DBInstanceIdentifier < b.DBInstanceIdentifier) return -1;
-                else if (a.DBInstanceIdentifier > b.DBInstanceIdentifier) return +1;
+            r.trailList.sort(function (a, b) {
+                if (a.TrailArn < b.TrailArn) return -1;
+                else if (a.TrailArn > b.TrailArn) return +1;
                 else return 0;
             });
-            // TODO, more sorting?
-            // DBParameterGroups.DBParameterGroupName
-            // DBSecurityGroups.DBSecurityGroupName
-            // DBSubnetGroup.Subnets.SubnetIdentifier
-            // OptionGroupMemberships.OptionGroupName
-            // ...
             return r;
-        });
+        })
+    );
 };
 
 var collectAllForRegion = function (clientConfig, region) {
     var client = promiseClient(clientConfig, region);
 
-    var ddi = client.then(describeDBInstances).then(AtomicFile.saveJsonTo("var/service/rds/region/"+region+"/describe-db-instances.json"));
+    var alarms = client.then(describeTrails).then(AtomicFile.saveJsonTo("var/service/cloudtrail/region/"+region+"/describe-trails.json"));
 
     return Q.all([
-        ddi,
-        Q(true)
+        alarms
     ]);
 };
 

@@ -19,8 +19,8 @@ var Q = require('q');
 var csv = require("fast-csv");
 var merge = require("merge");
 
-var AtomicFile = require('./atomic-file');
-var AwsDataUtils = require('./aws-data-utils');
+var AtomicFile = require('../util/atomic-file');
+var AwsDataUtils = require('../util/aws-data-utils');
 
 var promiseClient = function () {
     return Q(new AWS.IAM());

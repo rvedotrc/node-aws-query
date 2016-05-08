@@ -4,8 +4,8 @@ var fs = require("fs");
 require("should");
 var sinon = require("sinon");
 
-var AtomicFile = require("../atomic-file");
-var TreeMaker = require('../tree-maker');
+var AtomicFile = require("../util/atomic-file");
+var TreeMaker = require('../util/tree-maker');
 
 describe("AtomicFile", function () {
 

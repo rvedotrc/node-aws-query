@@ -18,10 +18,10 @@ var AWS = require('aws-sdk');
 var Q = require('q');
 var merge = require('merge');
 
-var AtomicFile = require('./atomic-file');
-var AwsDataUtils = require('./aws-data-utils');
+var AtomicFile = require('../util/atomic-file');
+var AwsDataUtils = require('../util/aws-data-utils');
 
-var regions = require('./regions').regionsForService('ec2');
+var regions = require('../regions').regionsForService('ec2');
 
 var promiseClient = function (clientConfig, region) {
     var config = merge(clientConfig, { region: region });

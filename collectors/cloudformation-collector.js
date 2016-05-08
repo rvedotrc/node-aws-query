@@ -20,10 +20,10 @@ var fs = require('fs');
 var merge = require('merge');
 var rimraf = require('rimraf');
 
-var AtomicFile = require('./atomic-file');
-var AwsDataUtils = require('./aws-data-utils');
+var AtomicFile = require('../util/atomic-file');
+var AwsDataUtils = require('../util/aws-data-utils');
 
-var regions = require('./regions').regionsForService('cloudformation');
+var regions = require('../regions').regionsForService('cloudformation');
 
 var promiseClient = function (clientConfig, region) {
     var config = merge(clientConfig, { region: region });

@@ -19,11 +19,11 @@ var Q = require('q');
 var merge = require('merge');
 var path = require('path');
 
-var AtomicFile = require('./atomic-file');
-var AwsDataUtils = require('./aws-data-utils');
-var SqsListAllQueues = require('./sqs-list-all-queues');
+var AtomicFile = require('../util/atomic-file');
+var AwsDataUtils = require('../util/aws-data-utils');
+var SqsListAllQueues = require('../util/sqs-list-all-queues');
 
-var regions = require('./regions').regionsForService('sqs');
+var regions = require('../regions').regionsForService('sqs');
 
 var promiseClient = function (clientConfig, region) {
     var config = merge(clientConfig, { region: region });

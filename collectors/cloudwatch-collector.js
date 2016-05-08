@@ -18,24 +18,31 @@ var AWS = require('aws-sdk');
 var Q = require('q');
 var merge = require('merge');
 
-var AtomicFile = require('./atomic-file');
-var AwsDataUtils = require('./aws-data-utils');
+var AtomicFile = require('../util/atomic-file');
+var AwsDataUtils = require('../util/aws-data-utils');
 
-var regions = require('./regions').regionsForService('cloudtrail');
+var regions = require('../regions').regionsForService('cloudwatch');
 
 var promiseClient = function (clientConfig, region) {
     var config = merge(clientConfig, { region: region });
-    return Q(new AWS.CloudTrail(config));
+    return Q(new AWS.CloudWatch(config));
 };
 
-var describeTrails = function (client) {
-    return(AwsDataUtils.collectFromAws(client, "describeTrails", {})
+var describeAlarms = function (client) {
+    var paginationHelper = AwsDataUtils.paginationHelper("NextToken", "NextToken", "MetricAlarms");
+
+    return(AwsDataUtils.collectFromAws(client, "describeAlarms", {}, paginationHelper)
         .then(AwsDataUtils.tidyResponseMetadata)
         .then(function (r) {
-            r.trailList.sort(function (a, b) {
-                if (a.TrailArn < b.TrailArn) return -1;
-                else if (a.TrailArn > b.TrailArn) return +1;
+            r.MetricAlarms.sort(function (a, b) {
+                if (a.AlarmArn < b.AlarmArn) return -1;
+                else if (a.AlarmArn > b.AlarmArn) return +1;
                 else return 0;
+            });
+            r.MetricAlarms.forEach(function (ele) {
+                if (ele.StateReasonData !== undefined) {
+                    ele.StateReasonData = JSON.parse(ele.StateReasonData);
+                }
             });
             return r;
         })
@@ -45,7 +52,7 @@ var describeTrails = function (client) {
 var collectAllForRegion = function (clientConfig, region) {
     var client = promiseClient(clientConfig, region);
 
-    var alarms = client.then(describeTrails).then(AtomicFile.saveJsonTo("var/service/cloudtrail/region/"+region+"/describe-trails.json"));
+    var alarms = client.then(describeAlarms).then(AtomicFile.saveJsonTo("var/service/cloudwatch/region/"+region+"/describe-alarms.json"));
 
     return Q.all([
         alarms

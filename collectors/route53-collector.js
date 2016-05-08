@@ -18,8 +18,8 @@ var AWS = require('aws-sdk');
 var Q = require('q');
 var merge = require('merge');
 
-var AtomicFile = require('./atomic-file');
-var AwsDataUtils = require('./aws-data-utils');
+var AtomicFile = require('../util/atomic-file');
+var AwsDataUtils = require('../util/aws-data-utils');
 
 var promiseClient = function (clientConfig) {
     return Q(new AWS.Route53(clientConfig));
