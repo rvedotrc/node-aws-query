@@ -81,8 +81,8 @@ var describeAutoScalingGroups = function (client) {
 var collectAllForRegion = function (clientConfig, region) {
     var client = promiseClient(clientConfig, region);
 
-    var p_describeAccountLimits = client.then(describeAccountLimits).then(AtomicFile.saveJsonTo("var/service/autoscaling/region/"+region+"/describe-account-limits.json"));
-    var p_describeAutoScalingGroups = client.then(describeAutoScalingGroups).then(AtomicFile.saveJsonTo("var/service/autoscaling/region/"+region+"/describe-autoscaling-groups.json"));
+    var p_describeAccountLimits = client.then(describeAccountLimits).then(AtomicFile.saveJsonTo("service/autoscaling/region/"+region+"/describe-account-limits.json"));
+    var p_describeAutoScalingGroups = client.then(describeAutoScalingGroups).then(AtomicFile.saveJsonTo("service/autoscaling/region/"+region+"/describe-autoscaling-groups.json"));
     // many, many more things that can be added...
 
     return Q.all([

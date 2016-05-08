@@ -70,7 +70,7 @@ var getAttributesForTopic = function (client, region, topicArn) {
         .then(function (r) { return r.Attributes; })
         .then(AwsDataUtils.decodeJsonInline("Policy"))
         .then(AwsDataUtils.decodeJsonInline("EffectiveDeliveryPolicy"))
-        .then(AtomicFile.saveJsonTo("var/service/sns/region/"+region+"/topic/" + topicName + "/attributes.json"));
+        .then(AtomicFile.saveJsonTo("service/sns/region/"+region+"/topic/" + topicName + "/attributes.json"));
 };
 
 var getAttributesForAllTopics = function (client, region, topics) {
@@ -84,8 +84,8 @@ var getAttributesForAllTopics = function (client, region, topics) {
 var collectAllForRegion = function (clientConfig, region) {
     var client = promiseClient(clientConfig, region);
 
-    var topics = client.then(listTopics).then(AtomicFile.saveJsonTo("var/service/sns/region/"+region+"/list-topics.json"));
-    var subs = client.then(listSubscriptions).then(AtomicFile.saveJsonTo("var/service/sns/region/"+region+"/list-subscriptions.json"));
+    var topics = client.then(listTopics).then(AtomicFile.saveJsonTo("service/sns/region/"+region+"/list-topics.json"));
+    var subs = client.then(listSubscriptions).then(AtomicFile.saveJsonTo("service/sns/region/"+region+"/list-subscriptions.json"));
     var attrs = Q.all([ client, region, topics ]).spread(getAttributesForAllTopics);
 
     return Q.all([

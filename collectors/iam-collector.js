@@ -151,17 +151,17 @@ var collectAll = function () {
 
     var gaad = Q.all([ client ]).spread(getAccountAuthorizationDetails)
         .then(decodePoliciesForAuthDetails)
-        .then(AtomicFile.saveJsonTo("var/service/iam/account-authorization-details.json"));
+        .then(AtomicFile.saveJsonTo("service/iam/account-authorization-details.json"));
 
-    var gcr = client.then(getCredentialReportCsv).then(AtomicFile.saveContentTo("var/service/iam/credential-report.raw"));
-    var jcr = gcr.then(parseCsv).then(AtomicFile.saveJsonTo("var/service/iam/credential-report.json"));
+    var gcr = client.then(getCredentialReportCsv).then(AtomicFile.saveContentTo("service/iam/credential-report.raw"));
+    var jcr = gcr.then(parseCsv).then(AtomicFile.saveJsonTo("service/iam/credential-report.json"));
 
-    var laa = client.then(listAccountAliases).then(AwsDataUtils.tidyResponseMetadata).then(AtomicFile.saveJsonTo("var/service/iam/list-account-aliases.json"));
+    var laa = client.then(listAccountAliases).then(AwsDataUtils.tidyResponseMetadata).then(AtomicFile.saveJsonTo("service/iam/list-account-aliases.json"));
 
     var listOfUserNames = Q(gaad).then(function (l) {
         return l.UserDetailList.map(function (u) { return u.UserName; });
     });
-    var lak = Q.all([ client, listOfUserNames ]).spread(listAccessKeys).then(AtomicFile.saveJsonTo("var/service/iam/list-access-keys.json"));
+    var lak = Q.all([ client, listOfUserNames ]).spread(listAccessKeys).then(AtomicFile.saveJsonTo("service/iam/list-access-keys.json"));
 
     return Q.all([
         gaad,

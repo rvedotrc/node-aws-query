@@ -57,19 +57,26 @@ var writeJson = function (data, filename) {
     return writeString(CanonicalJson(data, null, 2)+"\n", filename).thenResolve(data);
 };
 
+var rootDir = ".";
+
+var setRootDir = function (dir) {
+    rootDir = dir;
+};
+
 var saveContentTo = function (filename) {
     return function (data) {
-        return writeString(data, filename);
+        return writeString(data, rootDir + "/" + filename);
     };
 };
 
 var saveJsonTo = function (filename) {
     return function (data) {
-        return writeJson(data, filename);
+        return writeJson(data, rootDir + "/" + filename);
     };
 };
 
 module.exports = {
+    setRootDir: setRootDir,
     saveContentTo: saveContentTo,
     saveJsonTo: saveJsonTo
 };

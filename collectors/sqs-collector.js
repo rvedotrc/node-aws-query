@@ -67,7 +67,7 @@ var getQueueAttributes = function(client, region, url) {
             var saveAttrs = Q(r.Attributes)
                 .then(AwsDataUtils.decodeJsonInline("Policy"))
                 .then(AwsDataUtils.decodeJsonInline("RedrivePolicy"))
-                .then(AtomicFile.saveJsonTo("var/service/sqs/region/"+region+"/queue/"+queueName+"/attributes.json"));
+                .then(AtomicFile.saveJsonTo("service/sqs/region/"+region+"/queue/"+queueName+"/attributes.json"));
             return saveAttrs;
         });
 };
@@ -75,8 +75,8 @@ var getQueueAttributes = function(client, region, url) {
 var collectAllForRegion = function (clientConfig, region) {
     var client = promiseClient(clientConfig, region);
 
-    var queueUrls = client.then(listAllQueues).then(AtomicFile.saveJsonTo("var/service/sqs/region/"+region+"/list-all-queues.json"));
-    var queueNames = queueUrls.then(queueUrlsToNames).then(AtomicFile.saveContentTo("var/service/sqs/region/"+region+"/list-all-queues.txt"));
+    var queueUrls = client.then(listAllQueues).then(AtomicFile.saveJsonTo("service/sqs/region/"+region+"/list-all-queues.json"));
+    var queueNames = queueUrls.then(queueUrlsToNames).then(AtomicFile.saveContentTo("service/sqs/region/"+region+"/list-all-queues.txt"));
     var queueAttrs = Q.all([ client, region, queueUrls ]).spread(getAllQueueAttributes);
 
     return Q.all([

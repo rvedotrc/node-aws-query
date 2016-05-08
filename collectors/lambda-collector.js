@@ -33,7 +33,7 @@ var getFunctionPolicy = function (client, region, functionName) {
         .then(function (r) {
             return Q(r)
                 .then(AwsDataUtils.decodeJsonInline("Policy"))
-                .then(AtomicFile.saveJsonTo("var/service/lambda/region/"+region+"/function/"+functionName+"/policy.json"));
+                .then(AtomicFile.saveJsonTo("service/lambda/region/"+region+"/function/"+functionName+"/policy.json"));
         }, function (e) {
             if (e.code == "ResourceNotFoundException") return;
             throw e;
@@ -68,7 +68,7 @@ var listFunctions = function (client) {
 var collectAllForRegion = function (clientConfig, region) {
     var client = promiseClient(clientConfig, region);
 
-    var functions = client.then(listFunctions).then(AtomicFile.saveJsonTo("var/service/lambda/region/"+region+"/list-functions.json"));
+    var functions = client.then(listFunctions).then(AtomicFile.saveJsonTo("service/lambda/region/"+region+"/list-functions.json"));
 
     var getAllPolicies = Q.all([ client, region, functions ]).spread(getAllFunctionPolicies);
 

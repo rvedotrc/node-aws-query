@@ -18,6 +18,7 @@ var parse = function (args) {
     var program = require('commander');
     program
         .version('0.0.1')
+        .option('--directory [DIR]', "Save output under DIR (default: ./var)")
         .option('--cloudformation', "Collect cloudformation data and nothing else")
         .option('--exhaustive', "Do not optimise by stack status")
         .option('--stack <arn>', "Only process this stack (only valid with --cloudformation)")

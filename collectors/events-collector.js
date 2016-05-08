@@ -52,7 +52,7 @@ var collectAllForRegion = function (clientConfig, region) {
                 })
             );
         })
-        .then(AtomicFile.saveJsonTo("var/service/events/region/"+region+"/list-rules.json"));
+        .then(AtomicFile.saveJsonTo("service/events/region/"+region+"/list-rules.json"));
 
     return rules;
 };

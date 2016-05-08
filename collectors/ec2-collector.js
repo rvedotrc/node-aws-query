@@ -111,11 +111,11 @@ var describeVolumes = function (client) {
 var collectAllForRegion = function (clientConfig, region) {
     var client = promiseClient(clientConfig, region);
 
-    var di = client.then(describeInstances).then(AtomicFile.saveJsonTo("var/service/ec2/region/"+region+"/describe-instances.json"));
-    var da = client.then(describeAddresses).then(AtomicFile.saveJsonTo("var/service/ec2/region/"+region+"/describe-addresses.json"));
-    var daa = client.then(describeAccountAttributes).then(AtomicFile.saveJsonTo("var/service/ec2/region/"+region+"/describe-account-attributes.json"));
-    var daz = client.then(describeAvailabilityZones).then(AtomicFile.saveJsonTo("var/service/ec2/region/"+region+"/describe-availability-zones.json"));
-    var dv = client.then(describeVolumes).then(AtomicFile.saveJsonTo("var/service/ec2/region/"+region+"/describe-volumes.json"));
+    var di = client.then(describeInstances).then(AtomicFile.saveJsonTo("service/ec2/region/"+region+"/describe-instances.json"));
+    var da = client.then(describeAddresses).then(AtomicFile.saveJsonTo("service/ec2/region/"+region+"/describe-addresses.json"));
+    var daa = client.then(describeAccountAttributes).then(AtomicFile.saveJsonTo("service/ec2/region/"+region+"/describe-account-attributes.json"));
+    var daz = client.then(describeAvailabilityZones).then(AtomicFile.saveJsonTo("service/ec2/region/"+region+"/describe-availability-zones.json"));
+    var dv = client.then(describeVolumes).then(AtomicFile.saveJsonTo("service/ec2/region/"+region+"/describe-volumes.json"));
     // many, many more things that can be added...
 
     return Q.all([

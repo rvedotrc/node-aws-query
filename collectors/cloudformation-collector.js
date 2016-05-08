@@ -55,7 +55,7 @@ var doStackDescription = function (client, region, stackName) {
             d.Tags.sort(comparator("Key"));
             return s;
         })
-        .then(AtomicFile.saveJsonTo("var/service/cloudformation/region/"+region+"/stack/" + stackName + "/description.json"));
+        .then(AtomicFile.saveJsonTo("service/cloudformation/region/"+region+"/stack/" + stackName + "/description.json"));
 };
 
 var doStackResources = function (client, region, stackName) {
@@ -70,7 +70,7 @@ var doStackResources = function (client, region, stackName) {
             d.StackResourceSummaries.sort(comparator("LogicalResourceId"));
             return d;
         })
-        .then(AtomicFile.saveJsonTo("var/service/cloudformation/region/"+region+"/stack/" + stackName + "/resources.json"));
+        .then(AtomicFile.saveJsonTo("service/cloudformation/region/"+region+"/stack/" + stackName + "/resources.json"));
 };
 
 var doStackTemplate = function (client, region, stackName) {
@@ -78,14 +78,14 @@ var doStackTemplate = function (client, region, stackName) {
         .then(function (cfn) { return AwsDataUtils.collectFromAws(cfn, "getTemplate", { StackName: stackName }); })
         .then(AwsDataUtils.tidyResponseMetadata)
         .then(function (d) { return JSON.parse(d.TemplateBody); })
-        .then(AtomicFile.saveJsonTo("var/service/cloudformation/region/"+region+"/stack/" + stackName + "/template.json"));
+        .then(AtomicFile.saveJsonTo("service/cloudformation/region/"+region+"/stack/" + stackName + "/template.json"));
 };
 
 var doStack = function (client, region, stackName) {
     var d = doStackDescription(client, region, stackName);
     var r = doStackResources(client, region, stackName);
     var t = doStackTemplate(client, region, stackName);
-    var legacy = Q.nfcall(rimraf, "var/service/cloudformation/region/"+region+"/stack/" + stackName + "/summary.json");
+    var legacy = Q.nfcall(rimraf, "service/cloudformation/region/"+region+"/stack/" + stackName + "/summary.json");
 
     return Q.all([ d, r, t, legacy ])
         .fail(function (e) {
@@ -93,7 +93,7 @@ var doStack = function (client, region, stackName) {
                 // Just in case.
                 console.log("No such stack", stackName, "in", region);
                 return Q.allSettled([ d, r, t ]).then(function () {
-                    return Q.nfcall(rimraf, "var/service/cloudformation/region/"+region+"/stack/" + stackName);
+                    return Q.nfcall(rimraf, "service/cloudformation/region/"+region+"/stack/" + stackName);
                 });
             } else if (e.code === 'StackInProgress') {
                 console.log("Stack", stackName, "in", region, "is not at rest.  Waiting 10s and trying again.");
@@ -123,7 +123,7 @@ var descriptionMatchesSummary = function (description, summary) {
 };
 
 var conditionallyUpdateStack = function (client, region, summary) {
-    return Q.nfcall(fs.readFile, "var/service/cloudformation/region/"+region+"/stack/" + summary.StackName + "/description.json")
+    return Q.nfcall(fs.readFile, "service/cloudformation/region/"+region+"/stack/" + summary.StackName + "/description.json")
         .then(JSON.parse, function (e) {
             if (e.code === 'ENOENT') return null;
             throw e;
@@ -214,7 +214,7 @@ var collectAllForRegion = function (clientConfig, region, exhaustive) {
     return Q.all([ client, Q(params) ]).spread(doPage)
         .then(function () {
             console.log("All stacks in", region, "enumerated");
-            return deleteOtherSubdirs("var/service/cloudformation/region/"+region+"/stack", allStackNames);
+            return deleteOtherSubdirs("service/cloudformation/region/"+region+"/stack", allStackNames);
         });
 };
 

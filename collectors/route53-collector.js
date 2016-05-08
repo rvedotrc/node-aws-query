@@ -47,7 +47,7 @@ var listHostedZones = function (client) {
 var collectAll = function (clientConfig) {
     var client = promiseClient(clientConfig);
 
-    var lhz = client.then(listHostedZones).then(AtomicFile.saveJsonTo("var/service/route53/list-hosted-zones.json"));
+    var lhz = client.then(listHostedZones).then(AtomicFile.saveJsonTo("service/route53/list-hosted-zones.json"));
 
     return Q.all([
         lhz,

@@ -45,7 +45,7 @@ var describeTrails = function (client) {
 var collectAllForRegion = function (clientConfig, region) {
     var client = promiseClient(clientConfig, region);
 
-    var alarms = client.then(describeTrails).then(AtomicFile.saveJsonTo("var/service/cloudtrail/region/"+region+"/describe-trails.json"));
+    var alarms = client.then(describeTrails).then(AtomicFile.saveJsonTo("service/cloudtrail/region/"+region+"/describe-trails.json"));
 
     return Q.all([
         alarms

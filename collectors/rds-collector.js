@@ -51,7 +51,7 @@ var describeDBInstances = function (client) {
 var collectAllForRegion = function (clientConfig, region) {
     var client = promiseClient(clientConfig, region);
 
-    var ddi = client.then(describeDBInstances).then(AtomicFile.saveJsonTo("var/service/rds/region/"+region+"/describe-db-instances.json"));
+    var ddi = client.then(describeDBInstances).then(AtomicFile.saveJsonTo("service/rds/region/"+region+"/describe-db-instances.json"));
 
     return Q.all([
         ddi,

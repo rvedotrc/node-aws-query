@@ -52,7 +52,7 @@ var describeAlarms = function (client) {
 var collectAllForRegion = function (clientConfig, region) {
     var client = promiseClient(clientConfig, region);
 
-    var alarms = client.then(describeAlarms).then(AtomicFile.saveJsonTo("var/service/cloudwatch/region/"+region+"/describe-alarms.json"));
+    var alarms = client.then(describeAlarms).then(AtomicFile.saveJsonTo("service/cloudwatch/region/"+region+"/describe-alarms.json"));
 
     return Q.all([
         alarms

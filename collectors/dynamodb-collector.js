@@ -36,7 +36,7 @@ var listTables = function (client) {
 var collectAllForRegion = function (clientConfig, region) {
     var client = promiseClient(clientConfig, region);
 
-    var tableNames = client.then(listTables).then(AtomicFile.saveJsonTo("var/service/dynamodb/region/"+region+"/list-tables.json"));
+    var tableNames = client.then(listTables).then(AtomicFile.saveJsonTo("service/dynamodb/region/"+region+"/list-tables.json"));
 
     return Q.all([
         tableNames

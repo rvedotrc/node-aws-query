@@ -68,6 +68,8 @@ var clientConfig = {};
 // Also, TODO, add a command-line way to run only some subset of the
 // collectors, and/or a subset of the regions.
 
+require('./util/atomic-file').setRootDir(config.directory || "var");
+
 if (config.cloudformation) {
     if (config.stack) {
         CloudFormationCollector.collectOneStack(clientConfig, config.stack).done();
