@@ -32,7 +32,9 @@ will be added.
 
 Querying currently includes:
 
+ * CloudTrail: describeTrails
  * CloudWatch: describeAlarms
+ * CloudWatch Events; listRules, listTargetsByRule
  * DynamoDB: listTables
  * EC2: describeInstances, describeAddresses, describeAvailabilityZones,
    describeAccountAttributes
@@ -46,15 +48,20 @@ Querying currently includes:
  * SNS: listTopics, listSubscriptions
  * SQS: listQueues, and for each queue: getQueueAttributes
 
+Use `--services=REGEXP` to filter which services are processed.
+
+Use `--regions=REGEXP` to filter which regions are processed.
+
 The output
 ----------
 
-Currently, the files are always dumped to `./var`, but you can make this a
-symlink to a directory elsewhere if you wish.  The structure of the files
-created by `aws-query` generally follows the pattern
-`var/service/S/region/R/something.json`, for each service (e.g. ec2) and each
-region.  Notable exceptions include IAM (regionless), and S3 ("location" is
-used instead of "region").
+The files are dumped to to `./var`, but this can be changed with
+`--directory=DIR`.
+
+The structure of the files created by `aws-query` generally follows the
+pattern `var/service/S/region/R/something.json`, for each service (e.g. ec2)
+and each region.  Notable exceptions include IAM (regionless), and S3
+("location" is used instead of "region").
 
 Some of the dumped data is very much in the form provided by the SDK, albeit
 with pagination followed, sorting applied, and response metadata removed.
@@ -77,7 +84,6 @@ Future directions
 
  * More unit tests.
  * More query coverage.
- * Allow the base output directory to be specified (not just `./var`).
  * Some sort of mechanism to allow multiple accounts (i.e. sets
    of credentials) to be queried concurrently.
 
@@ -89,9 +95,4 @@ The unit test coverage is not great.  Sorry.
 `sqs-list-all-queues.js` and `prefix-truncation-expander.js` implement an
 algorithm for listing all queues, bypassing the 1000-result listQueues limit
 (which is a bug in AWS).  This code could be spun off into its own module.
-
-`executor.js` implements something akin to a Java executor with fixed sized
-thread pool (do all of _these_ things, but not more than _n_ concurrently).
-This could definitely become its own module - unless I become aware of
-something else out there that already does the same job.
 
