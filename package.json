@@ -19,7 +19,7 @@
     "sinon": "^1.14.1"
   },
   "dependencies": {
-    "aws-sdk": "^2.1.33",
+    "aws-sdk": "^2.3.9",
     "canonical-json": "^0.0.4",
     "commander": "^2.8.1",
     "fast-csv": "^0.6",

@@ -80,8 +80,7 @@ var collectAllForRegion = function (clientConfig, region) {
     // For "push" events, the answer lies in the services doing the sending -
     // e.g. S3 bucket notification configuration; SNS subscription.
 
-    // Alas "scheduled" events are sent from the "events.amazonaws.com"
-    // service, which is undocumented and has no API :-(
+    // "Scheduled" events come from the "events" service.
 
     return Q.all([
         functions,

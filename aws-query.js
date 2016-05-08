@@ -23,6 +23,7 @@ var CloudTrailCollector = require('./cloudtrail-collector');
 var CloudWatchCollector = require('./cloudwatch-collector');
 var DynamoDB = require('./dynamodb-collector');
 var EC2Collector = require('./ec2-collector');
+var EventsCollector = require('./events-collector');
 var IAMCollector = require('./iam-collector');
 var LambdaCollector = require('./lambda-collector');
 var RDSCollector = require('./rds-collector');
@@ -65,7 +66,7 @@ var clientConfig = {};
 // kinesis
 
 // Also, TODO, add a command-line way to run only some subset of the
-// collectors.
+// collectors, and/or a subset of the regions.
 
 if (config.cloudformation) {
     if (config.stack) {
@@ -80,6 +81,7 @@ if (config.cloudformation) {
         CloudWatchCollector.collectAll(clientConfig),
         DynamoDB.collectAll(clientConfig),
         EC2Collector.collectAll(clientConfig),
+        EventsCollector.collectAll(clientConfig),
         IAMCollector.collectAll(clientConfig),
         LambdaCollector.collectAll(clientConfig),
         RDSCollector.collectAll(clientConfig),
