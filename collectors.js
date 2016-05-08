@@ -14,19 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-var parse = function (args) {
-    var program = require('commander');
-    program
-        .version('0.0.1')
-        .option('--directory [DIR]', "Save output under DIR (default: ./var)")
-        .option('--services [PATTERN]', "Only process services whose names match PATTERN")
-        .option('--cloudformation', "Collect cloudformation data and nothing else")
-        .option('--exhaustive', "Do not optimise by stack status")
-        .option('--stack <arn>', "Only process this stack (only valid with --cloudformation)")
-        .parse(args);
-    return program;
+var fs = require('fs');
+
+var getCollectors = function (servicePattern) {
+    return fs.readdirSync(__dirname + "/collectors")
+        .filter(function (n) {
+            if (!n.endsWith("-collector.js")) return false;
+            var name = n.replace(/-collector\.js$/, "");
+            if (name === "cloudformation") return false;
+            return name.match(servicePattern);
+        })
+        .map(function (n) {
+            return require("./collectors/" + n);
+        });
 };
 
 module.exports = {
-    parse: parse,
+    getCollectors: getCollectors,
 };

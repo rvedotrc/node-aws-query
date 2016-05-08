@@ -17,21 +17,6 @@ limitations under the License.
 var Q = require('q');
 var proxy = require('https-proxy-agent');
 
-var AutoscalingCollector = require('./collectors/autoscaling-collector');
-var CloudFormationCollector = require('./collectors/cloudformation-collector');
-var CloudTrailCollector = require('./collectors/cloudtrail-collector');
-var CloudWatchCollector = require('./collectors/cloudwatch-collector');
-var DynamoDB = require('./collectors/dynamodb-collector');
-var EC2Collector = require('./collectors/ec2-collector');
-var EventsCollector = require('./collectors/events-collector');
-var IAMCollector = require('./collectors/iam-collector');
-var LambdaCollector = require('./collectors/lambda-collector');
-var RDSCollector = require('./collectors/rds-collector');
-var Route53Collector = require('./collectors/route53-collector');
-var S3Collector = require('./collectors/s3-collector');
-var SNSCollector = require('./collectors/sns-collector');
-var SQSCollector = require('./collectors/sqs-collector');
-
 Q.longStackSupport = true;
 
 var config = require('./options-parser').parse(process.argv);
@@ -65,32 +50,18 @@ var clientConfig = {};
 // glacier
 // kinesis
 
-// Also, TODO, add a command-line way to run only some subset of the
-// collectors, and/or a subset of the regions.
+// Also, TODO, add a command-line way to run a subset of the regions.
 
 require('./util/atomic-file').setRootDir(config.directory || "var");
 
 if (config.cloudformation) {
+    var CloudFormationCollector = require('./collectors/cloudformation-collector');
     if (config.stack) {
         CloudFormationCollector.collectOneStack(clientConfig, config.stack).done();
     } else {
         CloudFormationCollector.collectAll(clientConfig, config.exhaustive).done();
     }
 } else {
-    Q.all([
-        AutoscalingCollector.collectAll(clientConfig),
-        CloudTrailCollector.collectAll(clientConfig),
-        CloudWatchCollector.collectAll(clientConfig),
-        DynamoDB.collectAll(clientConfig),
-        EC2Collector.collectAll(clientConfig),
-        EventsCollector.collectAll(clientConfig),
-        IAMCollector.collectAll(clientConfig),
-        LambdaCollector.collectAll(clientConfig),
-        RDSCollector.collectAll(clientConfig),
-        Route53Collector.collectAll(clientConfig),
-        S3Collector.collectAll(clientConfig),
-        SNSCollector.collectAll(clientConfig),
-        SQSCollector.collectAll(clientConfig),
-        Q(true)
-    ]).done();
+    var collectors = require('./collectors').getCollectors(config.services || ".");
+    Q.all(collectors.map(function (c) { return c.collectAll(clientConfig); })).done();
 }
