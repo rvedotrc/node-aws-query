@@ -24,6 +24,13 @@ var getCollectors = function (servicePattern) {
             if (name === "cloudformation") return false;
             return name.match(servicePattern);
         })
+        .sort(function (n) {
+            // Definitely a hack.  IAM "getAccountAuthorizationDetails" can be
+            // very slow, and is often the last thing running, the limiting
+            // factor.  Move IAM to the start of the list so that its promises
+            // are made first.
+            return n.replace(/^iam/, "00-iam");
+        })
         .map(function (n) {
             return require("./collectors/" + n);
         });
