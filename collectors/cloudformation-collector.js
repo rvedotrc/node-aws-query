@@ -92,7 +92,7 @@ var doStack = function (client, region, stackName) {
                 // Just in case.
                 console.log("No such stack", stackName, "in", region);
                 return Q.allSettled([ d, r, t ]).then(function () {
-                    return Q.nfcall(rimraf, "service/cloudformation/region/"+region+"/stack/" + stackName);
+                    return Q.nfcall(rimraf, AtomicFile.expand("service/cloudformation/region/"+region+"/stack/" + stackName));
                 });
             } else if (e.code === 'StackInProgress') {
                 console.log("Stack", stackName, "in", region, "is not at rest.  Waiting 10s and trying again.");
@@ -122,7 +122,7 @@ var descriptionMatchesSummary = function (description, summary) {
 };
 
 var conditionallyUpdateStack = function (client, region, summary) {
-    return Q.nfcall(fs.readFile, "service/cloudformation/region/"+region+"/stack/" + summary.StackName + "/description.json")
+    return Q.nfcall(fs.readFile, AtomicFile.expand("service/cloudformation/region/"+region+"/stack/" + summary.StackName + "/description.json"))
         .then(JSON.parse, function (e) {
             if (e.code === 'ENOENT') return null;
             throw e;
@@ -218,14 +218,14 @@ var collectAllForRegion = function (clientConfig, region, exhaustive) {
 };
 
 var deleteOtherSubdirs = function (stacksDir, allStackNames) {
-    return Q.nfcall(fs.readdir, stacksDir)
+    return Q.nfcall(fs.readdir, AtomicFile.expand(stacksDir))
         .then(function (childDirs) {
             var toDelete = childDirs.filter(function (n) { return !allStackNames[n]; });
             if (toDelete.length > 0) {
                 console.log("Deleting", toDelete, "from", stacksDir);
                 return Q.all(
                     toDelete.map(function (stackName) {
-                        return Q.nfcall(rimraf, stacksDir + "/" + stackName);
+                        return Q.nfcall(rimraf, AtomicFile.expand(stacksDir + "/" + stackName));
                     })
                 );
             }

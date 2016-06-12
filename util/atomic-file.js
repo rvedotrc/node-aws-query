@@ -75,8 +75,13 @@ var saveJsonTo = function (filename) {
     };
 };
 
+var expand = function (path) {
+    return rootDir + "/" + path;
+};
+
 module.exports = {
     setRootDir: setRootDir,
     saveContentTo: saveContentTo,
-    saveJsonTo: saveJsonTo
+    saveJsonTo: saveJsonTo,
+    expand: expand
 };
