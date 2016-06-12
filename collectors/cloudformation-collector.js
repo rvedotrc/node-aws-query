@@ -85,9 +85,8 @@ var doStack = function (client, region, stackName) {
     var d = doStackDescription(client, region, stackName);
     var r = doStackResources(client, region, stackName);
     var t = doStackTemplate(client, region, stackName);
-    var legacy = Q.nfcall(rimraf, "service/cloudformation/region/"+region+"/stack/" + stackName + "/summary.json");
 
-    return Q.all([ d, r, t, legacy ])
+    return Q.all([ d, r, t ])
         .fail(function (e) {
             if (e.code === 'StackDoesNotExist' || (e.code === 'ValidationError' && e.message && e.message.match(/^Stack.*does not exist/))) {
                 // Just in case.
