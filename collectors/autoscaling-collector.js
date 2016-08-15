@@ -78,16 +78,37 @@ var describeAutoScalingGroups = function (client) {
         });
 };
 
+var describeNotificationConfigurations = function (client) {
+    var paginationHelper = AwsDataUtils.paginationHelper("NextToken", "NextToken", "NotificationConfigurations");
+
+    return AwsDataUtils.collectFromAws(client, "describeNotificationConfigurations", {}, paginationHelper)
+        .then(AwsDataUtils.tidyResponseMetadata)
+        .then(function (r) {
+            r.NotificationConfigurations.sort(function (a, b) {
+                if (a.AutoScalingGroupName < b.AutoScalingGroupName) return -1;
+                else if (a.AutoScalingGroupName > b.AutoScalingGroupName) return +1;
+                else if (a.TopicARN < b.TopicARN) return -1;
+                else if (a.TopicARN > b.TopicARN) return +1;
+                else if (a.NotificationType < b.NotificationType) return -1;
+                else if (a.NotificationType > b.NotificationType) return +1;
+                else return 0;
+            });
+            return r;
+        });
+};
+
 var collectAllForRegion = function (clientConfig, region) {
     var client = promiseClient(clientConfig, region);
 
     var p_describeAccountLimits = client.then(describeAccountLimits).then(AtomicFile.saveJsonTo("service/autoscaling/region/"+region+"/describe-account-limits.json"));
     var p_describeAutoScalingGroups = client.then(describeAutoScalingGroups).then(AtomicFile.saveJsonTo("service/autoscaling/region/"+region+"/describe-autoscaling-groups.json"));
+    var p_describeNotificationConfigurations = client.then(describeNotificationConfigurations).then(AtomicFile.saveJsonTo("service/autoscaling/region/"+region+"/describe-notification-configurations.json"));
     // many, many more things that can be added...
 
     return Q.all([
         p_describeAccountLimits,
         p_describeAutoScalingGroups,
+        p_describeNotificationConfigurations,
         Q(true)
     ]);
 };
