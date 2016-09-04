@@ -36,7 +36,7 @@ var promiseClient = function (clientConfig, region) {
 // describeLaunchConfigurations
 // describeLifecycleHooks
 // describeLifecycleHookTypes
-// describeLoadBalancers
+// describeLoadBalancers - per ASG
 // describeMetricCollectionTypes
 // describeNotificationConfigurations
 // describePolicies
@@ -78,6 +78,30 @@ var describeAutoScalingGroups = function (client) {
         });
 };
 
+var describeLaunchConfigurations = function (client) {
+    var paginationHelper = AwsDataUtils.paginationHelper("NextToken", "NextToken", "LaunchConfigurations");
+
+    return AwsDataUtils.collectFromAws(client, "describeLaunchConfigurations", {}, paginationHelper)
+        .then(AwsDataUtils.tidyResponseMetadata)
+        .then(function (r) {
+            r.LaunchConfigurations.sort(function (a, b) {
+                if (a.LaunchConfigurationName < b.LaunchConfigurationName) return -1;
+                if (a.LaunchConfigurationName > b.LaunchConfigurationName) return +1;
+                else return 0;
+            });
+            r.LaunchConfigurations.map(function (lc) {
+                if (lc.SecurityGroups) lc.SecurityGroups.sort();
+                if (lc.ClassicLinkVPCId) lc.ClassicLinkVPCId.sort();
+                if (lc.BlockDeviceMappings) lc.BlockDeviceMappings.sort(function (a, b) {
+                    if (a.DeviceName < b.DeviceName) return -1;
+                    if (a.DeviceName > b.DeviceName) return +1;
+                    else return 0;
+                });
+            });
+            return r;
+        });
+};
+
 var describeNotificationConfigurations = function (client) {
     var paginationHelper = AwsDataUtils.paginationHelper("NextToken", "NextToken", "NotificationConfigurations");
 
@@ -102,12 +126,14 @@ var collectAllForRegion = function (clientConfig, region) {
 
     var p_describeAccountLimits = client.then(describeAccountLimits).then(AtomicFile.saveJsonTo("service/autoscaling/region/"+region+"/describe-account-limits.json"));
     var p_describeAutoScalingGroups = client.then(describeAutoScalingGroups).then(AtomicFile.saveJsonTo("service/autoscaling/region/"+region+"/describe-autoscaling-groups.json"));
+    var p_describeLaunchConfigurations = client.then(describeLaunchConfigurations).then(AtomicFile.saveJsonTo("service/autoscaling/region/"+region+"/describe-launch-configurations.json"));
     var p_describeNotificationConfigurations = client.then(describeNotificationConfigurations).then(AtomicFile.saveJsonTo("service/autoscaling/region/"+region+"/describe-notification-configurations.json"));
     // many, many more things that can be added...
 
     return Q.all([
         p_describeAccountLimits,
         p_describeAutoScalingGroups,
+        p_describeLaunchConfigurations,
         p_describeNotificationConfigurations,
         Q(true)
     ]);
