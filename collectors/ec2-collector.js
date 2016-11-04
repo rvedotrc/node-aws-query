@@ -127,6 +127,10 @@ var describeVolumes = function (client) {
         });
 };
 
+var describeKeyPairs = function (client) {
+    return AwsDataUtils.collectFromAws(client, "describeKeyPairs", {});
+};
+
 var collectAllForRegion = function (clientConfig, region) {
     var client = promiseClient(clientConfig, region);
 
@@ -136,6 +140,7 @@ var collectAllForRegion = function (clientConfig, region) {
     var daz = client.then(describeAvailabilityZones).then(AtomicFile.saveJsonTo("service/ec2/region/"+region+"/describe-availability-zones.json"));
     var dsg = client.then(describeSecurityGroups).then(AtomicFile.saveJsonTo("service/ec2/region/"+region+"/describe-security-groups.json"));
     var dv = client.then(describeVolumes).then(AtomicFile.saveJsonTo("service/ec2/region/"+region+"/describe-volumes.json"));
+    var kp = client.then(describeKeyPairs).then(AtomicFile.saveJsonTo("service/ec2/region/"+region+"/describe-key-pairs.json"));
     // many, many more things that can be added...
 
     return Q.all([
@@ -145,6 +150,7 @@ var collectAllForRegion = function (clientConfig, region) {
         daz,
         dsg,
         dv,
+        kp,
         Q(true)
     ]);
 };
