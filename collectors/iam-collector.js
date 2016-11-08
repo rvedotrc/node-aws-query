@@ -146,6 +146,83 @@ var decodePoliciesForAuthDetails = function (l) {
     return l;
 };
 
+var listSSHPublicKeys = function (client, listOfUserNames) {
+    var listSSHPublicKeysForUser = function (client, userName) {
+        return AwsDataUtils.collectFromAws(client, "listSSHPublicKeys", { UserName: userName });
+    };
+
+    return Q.all(
+        listOfUserNames.map(function (u) {
+            return Q([ client, u ]).spread(listSSHPublicKeysForUser).then(AwsDataUtils.tidyResponseMetadata);
+        })
+    ).then(function (responses) {
+        var sorter = function (a, b) {
+            if (a.SSHPublicKeyId < b.SSHPublicKeyId) return -1;
+            if (a.SSHPublicKeyId > b.SSHPublicKeyId) return +1;
+            return 0;
+        };
+        var all = [];
+        responses.forEach(function (e) { all = all.concat(e.SSHPublicKeys.sort(sorter)); });
+        return { SSHPublicKeys: all };
+    });
+};
+
+var listSigningCertificates = function (client, listOfUserNames) {
+    var listForUser = function (client, userName) {
+        return AwsDataUtils.collectFromAws(client, "listSigningCertificates", { UserName: userName });
+    };
+
+    return Q.all(
+        listOfUserNames.map(function (u) {
+            return Q([ client, u ]).spread(listForUser).then(AwsDataUtils.tidyResponseMetadata);
+        })
+    ).then(function (responses) {
+        var sorter = function (a, b) {
+            if (a.CertificateId < b.CertificateId) return -1;
+            if (a.CertificateId > b.CertificateId) return +1;
+            return 0;
+        };
+        var all = [];
+        responses.forEach(function (e) { all = all.concat(e.Certificates.sort(sorter)); });
+        return { Certificates: all };
+    });
+};
+
+var listMFADevices = function (client, listOfUserNames) {
+    var listForUser = function (client, userName) {
+        return AwsDataUtils.collectFromAws(client, "listMFADevices", { UserName: userName });
+    };
+
+    return Q.all(
+        listOfUserNames.map(function (u) {
+            return Q([ client, u ]).spread(listForUser).then(AwsDataUtils.tidyResponseMetadata);
+        })
+    ).then(function (responses) {
+        var sorter = function (a, b) {
+            if (a.SerialNumber < b.SerialNumber) return -1;
+            if (a.SerialNumber > b.SerialNumber) return +1;
+            return 0;
+        };
+        var all = [];
+        responses.forEach(function (e) { all = all.concat(e.MFADevices.sort(sorter)); });
+        return { MFADevices: all };
+    });
+};
+
+var listVirtualMFADevices = function (client) {
+    var paginationHelper = AwsDataUtils.paginationHelper("NextMarker", "Marker", "VirtualMFADevices");
+    return AwsDataUtils.collectFromAws(client, "listVirtualMFADevices", {}, paginationHelper)
+        .then(AwsDataUtils.tidyResponseMetadata)
+        .then(function (r) {
+            r.VirtualMFADevices.sort(function (a, b) {
+                if (a.SerialNumber < b.SerialNumber) return -1;
+                else if (a.SerialNumber > b.SerialNumber) return +1;
+                else return 0;
+            });
+            return r;
+        });
+};
+
 var collectAll = function () {
     var client = promiseClient();
 
@@ -163,11 +240,20 @@ var collectAll = function () {
     });
     var lak = Q.all([ client, listOfUserNames ]).spread(listAccessKeys).then(AtomicFile.saveJsonTo("service/iam/list-access-keys.json"));
 
+    var lSSHPublicKeys = Q.all([ client, listOfUserNames ]).spread(listSSHPublicKeys).then(AtomicFile.saveJsonTo("service/iam/list-ssh-public-keys.json"));
+    var lSigningCertificates = Q.all([ client, listOfUserNames ]).spread(listSigningCertificates).then(AtomicFile.saveJsonTo("service/iam/list-signing-certificates.json"));
+    var lMFADevices = Q.all([ client, listOfUserNames ]).spread(listMFADevices).then(AtomicFile.saveJsonTo("service/iam/list-mfa-devices.json"));
+    var lVirtualMFADevices = client.then(listVirtualMFADevices).then(AtomicFile.saveJsonTo("service/iam/list-virtual-mfa-devices.json"));
+
     return Q.all([
         gaad,
         gcr, jcr,
         laa,
         lak,
+        lSSHPublicKeys,
+        lSigningCertificates,
+        lMFADevices,
+        lVirtualMFADevices,
         Q(true)
     ]);
 };
