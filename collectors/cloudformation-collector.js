@@ -74,8 +74,11 @@ var doStackResources = function (client, region, stackName) {
 };
 
 var doStackTemplate = function (client, region, stackName) {
+    var nullPaginator = {
+        nextArgs: function () {}
+    };
     return Q(client)
-        .then(function (cfn) { return AwsDataUtils.collectFromAws(cfn, "getTemplate", { StackName: stackName }); })
+        .then(function (cfn) { return AwsDataUtils.collectFromAws(cfn, "getTemplate", { StackName: stackName }, nullPaginator); })
         .then(AwsDataUtils.tidyResponseMetadata)
         .then(function (d) { return JSON.parse(d.TemplateBody); })
         .then(AtomicFile.saveJsonTo("service/cloudformation/region/"+region+"/stack/" + stackName + "/template.json"));
