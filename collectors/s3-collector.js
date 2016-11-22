@@ -16,12 +16,14 @@ limitations under the License.
 
 var AWS = require('aws-sdk');
 var Q = require('q');
+var merge = require('merge');
 
 var AtomicFile = require('../util/atomic-file');
 var AwsDataUtils = require('../util/aws-data-utils');
 
-var promiseClient = function () {
-    return Q(new AWS.S3({ region: 'eu-west-1' }));
+var promiseClient = function (clientConfig, region) {
+    var config = merge(clientConfig, { region: 'eu-west-1' });
+    return Q(new AWS.S3(config));
 };
 
 var getLocationForBucket = function (client, bucketName) {
@@ -32,9 +34,9 @@ var getLocationForBucket = function (client, bucketName) {
         });
 };
 
-var getClientForLocation = function (loc) {
+var getClientForLocation = function (clientConfig, loc) {
     if (loc === 'EU') loc = 'eu-west-1';
-    return Q(new AWS.S3({ region: loc }));
+    return promiseClient(clientConfig, loc);
 };
 
 var listBuckets = function (client) {
@@ -51,11 +53,11 @@ var listBuckets = function (client) {
         });
 };
 
-var collectBucketDetails = function (client, r) {
+var collectBucketDetails = function (clientConfig, client, r) {
     // XXX allow some to fail e.g. due to 403
     return Q.allSettled(
         r.Buckets.map(function (b) {
-            return Q([ client, b.Name ]).spread(getBucketDetails);
+            return Q([ clientConfig, client, b.Name ]).spread(getBucketDetails);
         })
     );
 };
@@ -160,9 +162,10 @@ var fetchBucketWebsite = function (client, loc, bucketName) {
     return getBucketData(client, loc, bucketName, "getBucketWebsite", null, "website.json");
 };
 
-var getBucketDetails = function (client, bucketName) {
+var getBucketDetails = function (clientConfig, client, bucketName) {
     var locationForBucket = getLocationForBucket(client, bucketName);
-    var clientForBucket = locationForBucket.then(getClientForLocation);
+    var clientForBucket = locationForBucket.then(function (l) { return getClientForLocation(clientConfig, l); });
+
     var args = Q([ clientForBucket, locationForBucket, bucketName ]);
     return Q.all([
         args.spread(fetchBucketAcl),
@@ -180,11 +183,11 @@ var getBucketDetails = function (client, bucketName) {
     ]);
 };
 
-var collectAll = function () {
-    var client = promiseClient();
+var collectAll = function (clientConfig) {
+    var client = promiseClient(clientConfig, 'eu-west-1');
 
     var buckets = client.then(listBuckets).then(AtomicFile.saveJsonTo("service/s3/list-buckets.json"));
-    var bucketDetails = Q.all([ client, buckets ]).spread(collectBucketDetails);
+    var bucketDetails = Q.all([ clientConfig, client, buckets ]).spread(collectBucketDetails);
 
     return Q.all([
         buckets,
