@@ -106,6 +106,19 @@ var fetchBucketCors = function (client, loc, bucketName) {
     return getBucketData(client, loc, bucketName, "getBucketCors", null, "cors.json");
 };
 
+var fetchBucketInventoryConfigurations = function (client, loc, bucketName) {
+    var processor = function (r) {
+        // TODO, possibly sort .OptionalFields for each entry in .InventoryConfigurationList
+        r.InventoryConfigurationList.sort(function (a, b) {
+            if (a.Id < b.Id) return -1;
+            else if (a.Id > b.Id) return +1;
+            else return 0;
+        });
+        return r;
+    };
+    return getBucketData(client, loc, bucketName, "listBucketInventoryConfigurations", processor, "bucket-inventory-configurations.json");
+};
+
 var fetchBucketLifecycle = function (client, loc, bucketName) {
     var processor = function (r) {
         r.Rules.sort(function (a, b) {
@@ -170,6 +183,7 @@ var getBucketDetails = function (clientConfig, client, bucketName) {
     return Q.all([
         args.spread(fetchBucketAcl),
         args.spread(fetchBucketCors),
+        args.spread(fetchBucketInventoryConfigurations),
         args.spread(fetchBucketLifecycle),
         args.spread(fetchBucketLogging),
         args.spread(fetchBucketNotificationConfiguration),
