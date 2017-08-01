@@ -81,16 +81,36 @@ var getAttributesForAllTopics = function (client, region, topics) {
     );
 };
 
+var getAttributesForSubscription = function (client, region, subscriptionArn) {
+    return AwsDataUtils.collectFromAws(client, "getSubscriptionAttributes", { SubscriptionArn: subscriptionArn })
+        .then(AwsDataUtils.tidyResponseMetadata)
+        .then(function (r) { return r.Attributes; })
+        .then(AwsDataUtils.decodeJsonInline("DeliveryPolicy"))
+        .then(AwsDataUtils.decodeJsonInline("EffectiveDeliveryPolicy"))
+        .then(AtomicFile.saveJsonTo("service/sns/region/"+region+"/subscription/" + subscriptionArn + "/attributes.json"));
+};
+
+var getAttributesForAllSubscriptions = function (client, region, subscriptions) {
+    return Q.all(
+        subscriptions.Subscriptions.map(function (s) {
+            return Q([ client, region, s.SubscriptionArn ]).spread(getAttributesForSubscription);
+        })
+    );
+};
+
 var collectAllForRegion = function (clientConfig, region) {
     var client = promiseClient(clientConfig, region);
 
     var topics = client.then(listTopics).then(AtomicFile.saveJsonTo("service/sns/region/"+region+"/list-topics.json"));
-    var subs = client.then(listSubscriptions).then(AtomicFile.saveJsonTo("service/sns/region/"+region+"/list-subscriptions.json"));
+    var subs = client.then(listSubscriptions);
+    var saveSubs = subs.then(AtomicFile.saveJsonTo("service/sns/region/"+region+"/list-subscriptions.json"));
+    var subAttrs = Q.all([ client, region, subs ]).spread(getAttributesForAllSubscriptions);
     var attrs = Q.all([ client, region, topics ]).spread(getAttributesForAllTopics);
 
     return Q.all([
         topics,
-        subs,
+        saveSubs,
+        subAttrs,
         attrs,
     ]);
 };
