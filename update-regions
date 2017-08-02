@@ -1,55 +1,12 @@
 #!/usr/bin/env ruby
 
-if !File.exist? "aws-region-reference"
-  puts "Cloning aws-region-reference ..."
-  system "git clone https://github.com/rvedotrc/aws-region-reference.git"
-  $?.success? or exit 1
-end
-
-begin
-  commit_time = `cd aws-region-reference && git log --format=%ct HEAD^..HEAD`.chomp
-  age = Time.now.to_i - commit_time.to_i
-  if age > 86400 * 30
-    puts "Updating aws-region-reference ..."
-    system "cd aws-region-reference && git pull"
-    $?.success? or exit 1
-  end
-end
-
+# Not sure that the list of services & regions is available in the JS SDK, but
+# it is in ruby.
+require 'aws-sdk'
 require 'json'
-data = JSON.parse(IO.read "regions-data.json")
-data.each_entry do |service, regions|
 
-  endpoint_name = case service
-                  when "cloudwatch"
-                    "monitoring"
-                  else
-                    service
-                  end
+regions_data = Aws.partition('aws').services.map do |s|
+  [ s.name, s.regions.to_a.sort ]
+end.sort_by(&:first).to_h
 
-  grepped = `cd aws-region-reference && ./bin/grep-service ^#{endpoint_name}`
-  grepped = JSON.parse grepped
-
-  if grepped.count == 2 and service == "ec2"
-    # VPC too :-/
-    grepped.shift
-  end
-
-  if grepped.count == 1
-    new_regions = grepped.first.map {|row| row[1]}.sort
-
-    # Basically they all do
-    if new_regions.include? "us-east-1"
-      data[service] = new_regions
-    else
-      puts "Looked for #{service} and found #{new_regions.inspect} but no us-east-1"
-    end
-  elsif grepped.empty?
-    puts "Found nothing for #{service}"
-  else
-    puts "Got #{grepped.count} matches for #{service}"
-    puts grepped.inspect
-  end
-end
-
-IO.write("regions-data.json", JSON.pretty_generate(data)+"\n")
+IO.write("regions-data.json", JSON.pretty_generate(regions_data))

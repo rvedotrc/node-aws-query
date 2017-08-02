@@ -21,7 +21,7 @@ var merge = require('merge');
 var AtomicFile = require('../util/atomic-file');
 var AwsDataUtils = require('../util/aws-data-utils');
 
-var regions = require('../regions').regionsForService('rds');
+var regions = require('../regions').regionsForService('RDS');
 
 var promiseClient = function (clientConfig, region) {
     var config = merge(clientConfig, { region: region });

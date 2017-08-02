@@ -23,7 +23,7 @@ var AtomicFile = require('../util/atomic-file');
 var AwsDataUtils = require('../util/aws-data-utils');
 var SqsListAllQueues = require('../util/sqs-list-all-queues');
 
-var regions = require('../regions').regionsForService('sqs');
+var regions = require('../regions').regionsForService('SQS');
 
 var promiseClient = function (clientConfig, region) {
     var config = merge(clientConfig, { region: region });
