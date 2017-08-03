@@ -92,7 +92,9 @@ var getAttributesForSubscription = function (client, region, subscriptionArn) {
 
 var getAttributesForAllSubscriptions = function (client, region, subscriptions) {
     return Q.all(
-        subscriptions.Subscriptions.map(function (s) {
+        subscriptions.Subscriptions.filter(function (s) {
+            return s.SubscriptionArn.match(/^arn:/); // as opposed to, say, "Deleted" !
+        }).map(function (s) {
             return Q([ client, region, s.SubscriptionArn ]).spread(getAttributesForSubscription);
         })
     );
