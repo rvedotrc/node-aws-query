@@ -73,6 +73,17 @@ var doStackResources = function (client, region, stackName) {
         .then(AtomicFile.saveJsonTo("service/cloudformation/region/"+region+"/stack/" + stackName + "/resources.json"));
 };
 
+var saveTemplateAsJsonOrYaml = function(text, directory) {
+    var data;
+    try { data = JSON.parse(text); } catch (e) { }
+
+    if (data === undefined) {
+        return Q(text).then(AtomicFile.saveContentTo(directory + "/template.yaml"));
+    } else {
+        return Q(data).then(AtomicFile.saveJsonTo(directory + "/template.json"));
+    }
+};
+
 var doStackTemplate = function (client, region, stackName) {
     var nullPaginator = {
         nextArgs: function () {}
@@ -80,8 +91,7 @@ var doStackTemplate = function (client, region, stackName) {
     return Q(client)
         .then(function (cfn) { return AwsDataUtils.collectFromAws(cfn, "getTemplate", { StackName: stackName }, nullPaginator); })
         .then(AwsDataUtils.tidyResponseMetadata)
-        .then(function (d) { return JSON.parse(d.TemplateBody); })
-        .then(AtomicFile.saveJsonTo("service/cloudformation/region/"+region+"/stack/" + stackName + "/template.json"));
+        .then(function (d) { return saveTemplateAsJsonOrYaml(d.TemplateBody, "service/cloudformation/region/"+region+"/stack/" + stackName); });
 };
 
 var doStack = function (client, region, stackName) {
