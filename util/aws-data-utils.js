@@ -69,7 +69,7 @@ var doCollectFromAws = function(nextJob, deferred, client, method, args, paginat
             deferred.resolve(data);
         } else {
             var delay;
-            if (err.code === 'Throttling') {
+            if (err.code === 'Throttling' || err.code === 'TooManyRequestsException') {
                 delay = exports.getDelay();
                 console.log("Will try again in", delay, "ms");
                 setTimeout(function () {
